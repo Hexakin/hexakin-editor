@@ -1,7 +1,6 @@
 {
   "name": "hexakin-editor",
   "version": "1.0.0",
-  "type": "module",
   "dependencies": {
     "openai": "^4.26.0"
   }
