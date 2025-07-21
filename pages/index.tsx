@@ -1,4 +1,5 @@
 import { useState } from "react";
+import FeatureTracker from '../components/FeatureTracker';
 
 export default function Home() {
   const [inputText, setInputText] = useState("");
@@ -67,6 +68,7 @@ export default function Home() {
         <p className="font-semibold mb-2">✏️ Edited version of your text:</p>
         <pre className="whitespace-pre-wrap">{editedText}</pre>
       </div>
+      <FeatureTracker />
     </main>
   );
 }
