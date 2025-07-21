@@ -10,6 +10,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  console.log("OPENAI_API_KEY available:", Boolean(process.env.OPENAI_API_KEY));
+
   const { text, mode } = req.body;
 
   if (!text || !mode) {
@@ -17,6 +19,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('Missing OpenAI API key.');
+    }
+
     const systemPrompt =
       mode === 'Line Edit'
         ? 'You are a helpful assistant that line-edits user writing to improve clarity, flow, and correctness without altering its meaning.'
