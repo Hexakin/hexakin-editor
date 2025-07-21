@@ -1,48 +1,42 @@
-// pages/api/edit.js
+import { NextApiRequest, NextApiResponse } from 'next';
+import OpenAI from 'openai';
 
-export default async function handler(req, res) {
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Missing OpenAI API key' });
-  }
-
   const { text, mode } = req.body;
+
   if (!text || !mode) {
     return res.status(400).json({ error: 'Missing text or mode' });
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: `You are a professional fiction editor who performs "${mode}" on the user's text.` },
-          { role: 'user', content: text }
-        ],
-        temperature: 0.7,
-      }),
+    const systemPrompt =
+      mode === 'Line Edit'
+        ? 'You are a helpful assistant that line-edits user writing to improve clarity, flow, and correctness without altering its meaning.'
+        : mode === 'Critique'
+        ? 'You are a professional editor who provides honest, constructive critique on the writing provided.'
+        : 'You are a helpful assistant. Improve the following text.';
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text },
+      ],
+      temperature: 0.7,
     });
 
-    const data = await response.json();
-
-    if (response.ok && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-      return res.status(200).json({ result: data.choices[0].message.content });
-    } else {
-      return res.status(500).json({
-        error: 'OpenAI response failed',
-        details: data
-      });
-    }
-  } catch (err) {
-    return res.status(500).json({ error: 'Unexpected error', details: err.message });
+    const result = completion.choices[0]?.message?.content || 'No response.';
+    return res.status(200).json({ result });
+  } catch (error: any) {
+    console.error('API error:', error);
+    return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }
