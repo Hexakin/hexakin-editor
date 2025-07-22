@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import FeatureTracker from "../components/FeatureTracker";
 
 const REFINE_OPTIONS = [
@@ -21,8 +21,23 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
+  const [storedSelection, setStoredSelection] = useState("");
 
   const outputRef = useRef<HTMLDivElement>(null);
+
+  // Capture selection when user clicks anywhere inside the output box
+  useEffect(() => {
+    const handleSelection = () => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim();
+      if (text) {
+        setStoredSelection(text);
+      }
+    };
+
+    document.addEventListener("mouseup", handleSelection);
+    return () => document.removeEventListener("mouseup", handleSelection);
+  }, []);
 
   const handleEdit = async () => {
     setLoading(true);
@@ -61,10 +76,6 @@ export default function Home() {
     setLoading(true);
     setError("");
 
-    // Check for selection in output box
-    const selection = window.getSelection();
-    const selectedText = selection?.toString().trim() || "";
-
     const isCustom = selectedRefine === "Custom";
     const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
 
@@ -74,7 +85,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: editedText,
-          selected: selectedText,
+          selected: storedSelection || "",
           instruction,
         }),
       });
@@ -82,7 +93,12 @@ export default function Home() {
       const data = await response.json();
 
       if (response.ok && data.result) {
-        setEditedText(data.result);
+        if (storedSelection) {
+          const newText = editedText.replace(storedSelection, data.result);
+          setEditedText(newText);
+        } else {
+          setEditedText(data.result);
+        }
         setRefinePrompt("");
       } else {
         setError("Refinement failed.");
@@ -99,6 +115,7 @@ export default function Home() {
     setInputText("");
     setEditedText("");
     setRefinePrompt("");
+    setStoredSelection("");
     setError("");
   };
 
@@ -183,7 +200,6 @@ export default function Home() {
           <div
             ref={outputRef}
             className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3"
-            contentEditable={false}
           >
             {loading ? "Editing in progress..." : editedText}
           </div>
