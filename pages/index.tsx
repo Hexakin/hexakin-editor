@@ -1,16 +1,28 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import FeatureTracker from "../components/FeatureTracker";
+
+const REFINE_OPTIONS = [
+  "Make it more vivid",
+  "Soften the tone",
+  "Add emotional depth",
+  "Tighten the pacing",
+  "Make it humorous",
+  "Custom",
+];
 
 export default function Home() {
   const [inputText, setInputText] = useState("");
   const [editedText, setEditedText] = useState("");
   const [refinePrompt, setRefinePrompt] = useState("");
+  const [selectedRefine, setSelectedRefine] = useState("");
   const [purpose, setPurpose] = useState("Line Edit");
   const [style, setStyle] = useState("Default");
   const [editorType, setEditorType] = useState("Novel Editor");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
+
+  const outputRef = useRef<HTMLDivElement>(null);
 
   const handleEdit = async () => {
     setLoading(true);
@@ -49,13 +61,21 @@ export default function Home() {
     setLoading(true);
     setError("");
 
+    // Check for selection in output box
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim() || "";
+
+    const isCustom = selectedRefine === "Custom";
+    const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
+
     try {
       const response = await fetch("/api/refine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: editedText,
-          instruction: refinePrompt || "Refine the text to improve flow and clarity.",
+          selected: selectedText,
+          instruction,
         }),
       });
 
@@ -63,7 +83,7 @@ export default function Home() {
 
       if (response.ok && data.result) {
         setEditedText(data.result);
-        setRefinePrompt(""); // Clear the box after use
+        setRefinePrompt("");
       } else {
         setError("Refinement failed.");
       }
@@ -102,11 +122,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
           <label className="block mb-1 font-semibold">Purpose</label>
-          <select
-            className="w-full border px-2 py-1 rounded"
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-          >
+          <select className="w-full border px-2 py-1 rounded" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
             <option>Line Edit</option>
             <option>Paragraph Rewrite</option>
             <option>Fiction Improve</option>
@@ -116,11 +132,7 @@ export default function Home() {
 
         <div>
           <label className="block mb-1 font-semibold">Style</label>
-          <select
-            className="w-full border px-2 py-1 rounded"
-            value={style}
-            onChange={(e) => setStyle(e.target.value)}
-          >
+          <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
             <option>Default</option>
             <option>Fantasy</option>
             <option>Formal</option>
@@ -132,11 +144,7 @@ export default function Home() {
 
         <div>
           <label className="block mb-1 font-semibold">Editor Type</label>
-          <select
-            className="w-full border px-2 py-1 rounded"
-            value={editorType}
-            onChange={(e) => setEditorType(e.target.value)}
-          >
+          <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
             <option>Novel Editor</option>
             <option>Email Editor</option>
             <option>Report Editor</option>
@@ -156,23 +164,13 @@ export default function Home() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <button
-          onClick={handleEdit}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
+        <button onClick={handleEdit} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           {loading ? "Processing..." : "Submit"}
         </button>
-        <button
-          onClick={handleClear}
-          className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-        >
+        <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">
           Clear
         </button>
-        <button
-          onClick={handleCopy}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          disabled={!editedText}
-        >
+        <button onClick={handleCopy} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={!editedText}>
           Copy Output
         </button>
       </div>
@@ -182,23 +180,42 @@ export default function Home() {
       {editedText && (
         <div className="mb-6">
           <label className="block mb-1 font-semibold">Edited Output</label>
-          <div className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3">
+          <div
+            ref={outputRef}
+            className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3"
+            contentEditable={false}
+          >
             {loading ? "Editing in progress..." : editedText}
           </div>
 
-          <label className="block mb-1 font-semibold">Refine Further (optional)</label>
-          <input
-            type="text"
-            placeholder="e.g. Make it sound more urgent"
-            className="w-full border px-3 py-2 rounded mb-2"
-            value={refinePrompt}
-            onChange={(e) => setRefinePrompt(e.target.value)}
-          />
+          <label className="block mb-1 font-semibold">Refine Further</label>
+          <div className="flex flex-col md:flex-row gap-2 mb-2">
+            <select
+              className="border px-3 py-2 rounded w-full md:w-1/2"
+              value={selectedRefine}
+              onChange={(e) => setSelectedRefine(e.target.value)}
+            >
+              <option value="">Select refinement type...</option>
+              {REFINE_OPTIONS.map((opt) => (
+                <option key={opt}>{opt}</option>
+              ))}
+            </select>
+
+            {selectedRefine === "Custom" && (
+              <input
+                type="text"
+                placeholder="Enter your custom refinement"
+                className="border px-3 py-2 rounded w-full md:w-1/2"
+                value={refinePrompt}
+                onChange={(e) => setRefinePrompt(e.target.value)}
+              />
+            )}
+          </div>
 
           <button
             onClick={handleRefine}
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            disabled={loading || !editedText}
+            disabled={loading}
           >
             Refine Output
           </button>

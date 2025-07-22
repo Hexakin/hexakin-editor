@@ -10,20 +10,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { text, instruction } = req.body;
+  const { text, selected, instruction } = req.body;
 
   if (!text || !instruction) {
     return res.status(400).json({ message: "Missing required fields." });
   }
 
   try {
-    const prompt = `You are a writing assistant. Please refine the following text according to this instruction:
+    const refiningText = selected?.trim() || text;
+
+    const prompt = `Refine the following text based on this instruction:
 
 Instruction: ${instruction}
 
 Text:
 """
-${text}
+${refiningText}
 """
 
 Return only the revised version.`;
