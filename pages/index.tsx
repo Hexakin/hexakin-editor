@@ -17,31 +17,57 @@ export default function Home() {
     setError("");
 
     try {
-      // Simulated response delay
-  const response = await fetch("/api/edit", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    input: inputText,
-    purpose,
-    style,
-    editorType
-  }),
-});
+      const response = await fetch("/api/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: inputText,
+          purpose,
+          style,
+          editorType,
+        }),
+      });
 
-const data = await response.json();
+      const data = await response.json();
 
-if (response.ok && data.result) {
-  setEditedText(data.result);
-} else {
-  setError("Failed to get a response from the editor.");
-}
-setLoading(false);
-
+      if (response.ok && data.result) {
+        setEditedText(data.result);
+      } else {
+        setError("Failed to get a response from the editor.");
+      }
     } catch (err) {
-      setError("Something went wrong.");
-      setLoading(false);
+      console.error("Edit error:", err);
+      setError("Something went wrong during editing.");
     }
+
+    setLoading(false);
+  };
+
+  const handleRefine = async () => {
+    if (!editedText) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: editedText }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.result) {
+        setEditedText(data.result);
+      } else {
+        setError("Refinement failed.");
+      }
+    } catch (err) {
+      console.error("Refine error:", err);
+      setError("Something went wrong during refinement.");
+    }
+
+    setLoading(false);
   };
 
   const handleClear = () => {
@@ -144,7 +170,7 @@ setLoading(false);
           Copy Output
         </button>
         <button
-          onClick={() => alert("Refinement tools coming soon!")}
+          onClick={handleRefine}
           className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
           disabled={!editedText}
         >
