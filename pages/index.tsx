@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import FeatureTracker from "../components/FeatureTracker";
 import VersionHistory from "../components/VersionHistory";
 import ExportButtons from "../components/ExportButtons";
 import { Clock } from "lucide-react";
@@ -105,49 +106,41 @@ export default function Home() {
     setLoading(false);
   };
 
-const handleRefine = async () => {
-  if (!editedText || !storedSelection) return;
-
-  setLoading(true);
-  setError("");
-  const isCustom = selectedRefine === "Custom";
-  const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
-
-  try {
-    const response = await fetch("/api/refine", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text: editedText,
-        selected: storedSelection,
-        instruction,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok && data.result) {
-      const refined = sanitize(data.result);
-
-      // Carefully replace only the stored selection
-      if (editedText.includes(storedSelection)) {
-        const updated = editedText.replace(storedSelection, refined);
-        setEditedText(updated);
+  const handleRefine = async () => {
+    if (!editedText || (!selectedRefine && !refinePrompt)) return;
+    setLoading(true);
+    setError("");
+    const isCustom = selectedRefine === "Custom";
+    const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
+    try {
+      const response = await fetch("/api/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: editedText,
+          selected: storedSelection || "",
+          instruction,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.result) {
+        const cleanResult = sanitize(data.result);
+        if (storedSelection && editedText.includes(storedSelection)) {
+          const updated = safeReplace(editedText, storedSelection, cleanResult);
+          setEditedText(updated);
+        } else {
+          setEditedText(cleanResult);
+        }
+        setRefinePrompt("");
       } else {
-        setError("Could not locate selection in text.");
+        setError("Refinement failed.");
       }
-
-      setRefinePrompt("");
-    } else {
-      setError("Refinement failed.");
+    } catch (err) {
+      console.error("Refine error:", err);
+      setError("Something went wrong during refinement.");
     }
-  } catch (err) {
-    console.error("Refine error:", err);
-    setError("Something went wrong during refinement.");
-  }
-
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
   const handleClear = () => {
     setInputText("");
@@ -174,30 +167,30 @@ const handleRefine = async () => {
         <div>
           <label className="block mb-1 font-semibold" title="Why you're editing this text">Purpose</label>
           <select className="w-full border px-2 py-1 rounded" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
-            <option value="Line Edit" title="Improve grammar, flow, and clarity">Line Edit</option>
-            <option value="Paragraph Rewrite" title="Rebuild the paragraph's structure and tone">Paragraph Rewrite</option>
-            <option value="Fiction Improve" title="Boost storytelling, emotion, and immersion">Fiction Improve</option>
-            <option value="Repetition Check" title="Detect and reduce word/phrase repetition">Repetition Check</option>
+            <option title="Improve grammar, flow, and clarity">Line Edit</option>
+            <option title="Rebuild the paragraph's structure and tone">Paragraph Rewrite</option>
+            <option title="Boost storytelling, emotion, and immersion">Fiction Improve</option>
+            <option title="Detect and reduce word/phrase repetition">Repetition Check</option>
           </select>
         </div>
         <div>
           <label className="block mb-1 font-semibold" title="Stylistic tone for the rewrite">Style</label>
           <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
-            <option value="Default" title="Balanced, neutral editing">Default</option>
-            <option value="Fantasy" title="Epic, whimsical, or magical tone">Fantasy</option>
-            <option value="Formal" title="Professional, clean, academic tone">Formal</option>
-            <option value="Playful" title="Light, clever, amusing style">Playful</option>
-            <option value="Science Fiction" title="Futuristic, sleek, or technical">Science Fiction</option>
-            <option value="Dark Thriller" title="Gritty, suspenseful, moody tone">Dark Thriller</option>
+            <option title="Balanced, neutral editing">Default</option>
+            <option title="Epic, whimsical, or magical tone">Fantasy</option>
+            <option title="Professional, clean, academic tone">Formal</option>
+            <option title="Light, clever, amusing style">Playful</option>
+            <option title="Futuristic, sleek, or technical">Science Fiction</option>
+            <option title="Gritty, suspenseful, moody tone">Dark Thriller</option>
           </select>
         </div>
         <div>
           <label className="block mb-1 font-semibold" title="Text type to adjust the model’s behavior">Editor Type</label>
           <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
-            <option value="Novel Editor" title="Best for creative writing and storytelling">Novel Editor</option>
-            <option value="Email Editor" title="Helpful for email drafts and replies">Email Editor</option>
-            <option value="Report Editor" title="Focuses on clarity for business reports">Report Editor</option>
-            <option value="Education/Local Council Editor" title="Supports forms, EHCPs, and local council docs">Education/Local Council Editor</option>
+            <option title="Best for creative writing and storytelling">Novel Editor</option>
+            <option title="Helpful for email drafts and replies">Email Editor</option>
+            <option title="Focuses on clarity for business reports">Report Editor</option>
+            <option title="Supports forms, EHCPs, and local council docs">Education/Local Council Editor</option>
           </select>
         </div>
       </div>
@@ -237,7 +230,7 @@ const handleRefine = async () => {
 
       <div className="my-4">
         <label className="block font-semibold mb-1">Refine Further</label>
-        <div className="flex gap-2 mb-2">
+        <div className="flex flex-col md:flex-row gap-2">
           <select
             className="border px-2 py-1 rounded"
             value={selectedRefine}
@@ -261,7 +254,7 @@ const handleRefine = async () => {
 
           <button
             onClick={handleRefine}
-            disabled={loading}
+            disabled={loading || (!selectedRefine && !refinePrompt)}
             className="bg-fuchsia-600 text-white px-4 py-2 rounded"
           >
             Refine Output
