@@ -1,121 +1,152 @@
 import { useState } from "react";
-import FeatureTracker from '../components/FeatureTracker';
+import FeatureTracker from "../components/FeatureTracker";
 
 export default function Home() {
   const [inputText, setInputText] = useState("");
   const [editedText, setEditedText] = useState("");
-  const [mode, setMode] = useState("Line Edit");
+  const [purpose, setPurpose] = useState("Line Edit");
+  const [style, setStyle] = useState("Default");
+  const [editorType, setEditorType] = useState("Novel Editor");
   const [loading, setLoading] = useState(false);
-const [tone, setTone] = useState("Default");
-const [darkMode, setDarkMode] = useState(false);
-const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
 
-const handleEdit = async () => {
-  setLoading(true);
-  setEditedText('');
-  setError(''); // Clear previous error
+  const handleEdit = async () => {
+    setLoading(true);
+    setEditedText("");
+    setError("");
 
-  try {
-    const response = await fetch('/api/edit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: inputText, mode, tone }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+    try {
+      // Simulated response delay
+      setTimeout(() => {
+        setEditedText(`Edited version of your text based on: 
+        Purpose: ${purpose}, Style: ${style}, Editor: ${editorType}`);
+        setLoading(false);
+      }, 1500);
+    } catch (err) {
+      setError("Something went wrong.");
+      setLoading(false);
     }
+  };
 
-    const data = await response.json();
+  const handleClear = () => {
+    setInputText("");
+    setEditedText("");
+    setError("");
+  };
 
-    if (!data.result) {
-      throw new Error('No result returned from API.');
-    }
+  const handleCopy = () => {
+    navigator.clipboard.writeText(editedText);
+  };
 
-    setEditedText(data.result);
-  } catch (err: any) {
-    console.error(err);
-    setError(err.message || 'Something went wrong. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
 
-return (
-  <div className={darkMode ? "bg-gray-900 text-white min-h-screen" : "bg-white text-black min-h-screen"}>
-    <main className="max-w-4xl mx-auto p-8">
-      <h1 className="text-4xl font-bold mb-4">Hexakin Editor</h1>
+  return (
+    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen p-6 transition-colors`}>
+      <header className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Hexakin Editor</h1>
+        <button onClick={toggleDarkMode} className="border px-3 py-1 rounded">
+          {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+        </button>
+      </header>
 
-      <button
-        onClick={() => setDarkMode(!darkMode)}
-        className="ml-auto mb-4 px-4 py-2 rounded text-sm border bg-gray-200 dark:bg-gray-800 dark:text-white"
-      >
-        {darkMode ? "🌞 Light Mode" : "🌙 Dark Mode"}
-      </button>
-
-      <textarea
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-        className="w-full h-40 p-4 border rounded mb-4"
-        placeholder="Enter text to edit..."
-      />
-
-      <div className="flex items-center gap-4 mb-4">
-        <select
-          value={mode}
-          onChange={(e) => setMode(e.target.value)}
-          className="mb-4 rounded border px-4 py-2"
-        >
-          <option value="Line Edit">Line Edit</option>
-          <option value="Formal Rewording">Formal Rewording</option>
-          <option value="Creative Rewrite">Creative Rewrite</option>
-          <option value="Paragraph Edit">Paragraph Edit</option>
-          <option value="Tense Consistency Check">Tense Consistency Check</option>
-          <option value="Metaphor & Imagery Review">Metaphor & Imagery Review</option>
-          <option value="Phrase Repetition Check">Phrase Repetition Check</option>
-          <option value="Tone & Style Feedback">Tone & Style Feedback</option>
-          <option value="Strengths & Praise Highlights">Strengths & Praise Highlights</option>
-        </select>
-
-        <div className="flex items-center gap-4 mb-4">
-          <label htmlFor="tone">Tone:</label>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label className="block mb-1 font-semibold">Purpose</label>
           <select
-            value={tone}
-            onChange={(e) => setTone(e.target.value)}
-            className="rounded border px-4 py-2"
-            id="tone"
+            className="w-full border px-2 py-1 rounded"
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
           >
-            <option value="Default">Default</option>
-            <option value="Formal">Formal</option>
-            <option value="Professional">Professional</option>
-            <option value="Playful">Playful</option>
-            <option value="Casual">Casual</option>
-            <option value="Show, don't tell">Show, don't tell</option>
+            <option>Line Edit</option>
+            <option>Paragraph Rewrite</option>
+            <option>Fiction Improve</option>
+            <option>Repetition Check</option>
           </select>
         </div>
 
+        <div>
+          <label className="block mb-1 font-semibold">Style</label>
+          <select
+            className="w-full border px-2 py-1 rounded"
+            value={style}
+            onChange={(e) => setStyle(e.target.value)}
+          >
+            <option>Default</option>
+            <option>Fantasy</option>
+            <option>Formal</option>
+            <option>Playful</option>
+            <option>Science Fiction</option>
+            <option>Dark Thriller</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block mb-1 font-semibold">Editor Type</label>
+          <select
+            className="w-full border px-2 py-1 rounded"
+            value={editorType}
+            onChange={(e) => setEditorType(e.target.value)}
+          >
+            <option>Novel Editor</option>
+            <option>Email Editor</option>
+            <option>Report Editor</option>
+            <option>Education/Local Council Editor</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 font-semibold">Input Text</label>
+        <textarea
+          className="w-full min-h-[200px] border px-3 py-2 rounded resize-y"
+          placeholder="Paste or type your text here..."
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-4">
         <button
           onClick={handleEdit}
-          className="bg-black text-white px-4 py-2 rounded"
-          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Editing..." : "Run Edit"}
+          {loading ? "Processing..." : "Submit"}
+        </button>
+        <button
+          onClick={handleClear}
+          className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+        >
+          Clear
+        </button>
+        <button
+          onClick={handleCopy}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          disabled={!editedText}
+        >
+          Copy Output
+        </button>
+        <button
+          onClick={() => alert("Refinement tools coming soon!")}
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          disabled={!editedText}
+        >
+          Refine Output
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded border dark:bg-gray-800 dark:text-white">
-        <p className="font-semibold mb-2">✏️ Edited version of your text:</p>
-        <pre className="whitespace-pre-wrap">{editedText}</pre>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+
+      <div className="mb-6">
+        <label className="block mb-1 font-semibold">Edited Output</label>
+        <div className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap">
+          {loading ? "Editing in progress..." : editedText}
+        </div>
       </div>
 
-{error && (
-  <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded dark:bg-red-800 dark:text-white">
-    ⚠️ {error}
-  </div>
-)}
-
       <FeatureTracker />
-    </main>
-  </div>
-);
+    </div>
+  );
 }
