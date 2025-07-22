@@ -8,33 +8,38 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 const [tone, setTone] = useState("Default");
 const [darkMode, setDarkMode] = useState(false);
+const [error, setError] = useState('');
 
-  const handleEdit = async () => {
-    setLoading(true);
-    setEditedText("Working...");
+const handleEdit = async () => {
+  setLoading(true);
+  setEditedText('');
+  setError(''); // Clear previous error
 
-    try {
-      const response = await fetch("/api/edit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ text: inputText, mode, tone }),
+  try {
+    const response = await fetch('/api/edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: inputText, mode, tone }),
+    });
 
-      });
-
-      const data = await response.json();
-
-      if (data.edited) {
-        setEditedText(data.edited);
-      } else {
-        setEditedText("No edit result returned.");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setEditedText("There was an error processing your request.");
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
     }
 
+    const data = await response.json();
+
+    if (!data.result) {
+      throw new Error('No result returned from API.');
+    }
+
+    setEditedText(data.result);
+  } catch (err: any) {
+    console.error(err);
+    setError(err.message || 'Something went wrong. Please try again.');
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
 return (
   <div className={darkMode ? "bg-gray-900 text-white min-h-screen" : "bg-white text-black min-h-screen"}>
@@ -102,6 +107,12 @@ return (
         <p className="font-semibold mb-2">✏️ Edited version of your text:</p>
         <pre className="whitespace-pre-wrap">{editedText}</pre>
       </div>
+
+{error && (
+  <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded dark:bg-red-800 dark:text-white">
+    ⚠️ {error}
+  </div>
+)}
 
       <FeatureTracker />
     </main>
