@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import FeatureTracker from "../components/FeatureTracker";
 import VersionHistory from "../components/VersionHistory";
+import ExportButtons from "../components/ExportButtons";
 import { Clock } from "lucide-react";
 
 const REFINE_OPTIONS = [
@@ -235,54 +236,74 @@ export default function Home() {
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
-      {editedText && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-1">
-            <label className="font-semibold">Edited Output</label>
-            <button
-              className="flex items-center text-sm hover:underline"
-              title="View Version History"
-              onClick={() => setShowHistory(!showHistory)}
-            >
-              <Clock size={18} className="mr-1" />
-              Version History
-            </button>
-          </div>
+{editedText && (
+  <div className="mb-6">
+    <div className="flex items-center justify-between mb-1">
+      <label className="font-semibold">Edited Output</label>
+      <button
+        className="flex items-center text-sm hover:underline"
+        title="View Version History"
+        onClick={() => setShowHistory(!showHistory)}
+      >
+        <Clock size={18} className="mr-1" />
+        Version History
+      </button>
+    </div>
 
-          <div className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3">
-            {loading ? "Editing in progress..." : editedText}
-          </div>
+    {/* Output Box */}
+    <div
+      ref={outputRef}
+      className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3"
+    >
+      {loading ? "Editing in progress..." : editedText}
+    </div>
 
-          {/* Refinement controls */}
-          <label className="block mb-1 font-semibold">Refine Further</label>
-          <div className="flex flex-col md:flex-row gap-2 mb-2">
-            <select className="border px-3 py-2 rounded w-full md:w-1/2" value={selectedRefine} onChange={(e) => setSelectedRefine(e.target.value)}>
-              <option value="">Select refinement type...</option>
-              {REFINE_OPTIONS.map((opt) => (
-                <option key={opt}>{opt}</option>
-              ))}
-            </select>
-            {selectedRefine === "Custom" && (
-              <input
-                type="text"
-                placeholder="Enter your custom refinement"
-                className="border px-3 py-2 rounded w-full md:w-1/2"
-                value={refinePrompt}
-                onChange={(e) => setRefinePrompt(e.target.value)}
-              />
-            )}
-          </div>
-          <button onClick={handleRefine} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700" disabled={loading}>
-            Refine Output
-          </button>
-        </div>
+    {/* ⬇️ Export Buttons */}
+    <ExportButtons content={editedText} />
+
+    {/* ⬇️ Refinement Dropdown */}
+    <label className="block mb-1 font-semibold">Refine Further</label>
+    <div className="flex flex-col md:flex-row gap-2 mb-2">
+      <select
+        className="border px-3 py-2 rounded w-full md:w-1/2"
+        value={selectedRefine}
+        onChange={(e) => setSelectedRefine(e.target.value)}
+      >
+        <option value="">Select refinement type...</option>
+        {REFINE_OPTIONS.map((opt) => (
+          <option key={opt}>{opt}</option>
+        ))}
+      </select>
+      {selectedRefine === "Custom" && (
+        <input
+          type="text"
+          placeholder="Enter your custom refinement"
+          className="border px-3 py-2 rounded w-full md:w-1/2"
+          value={refinePrompt}
+          onChange={(e) => setRefinePrompt(e.target.value)}
+        />
       )}
+    </div>
+    <button
+      onClick={handleRefine}
+      className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+      disabled={loading}
+    >
+      Refine Output
+    </button>
+  </div>
+)}
 
-      {showHistory && (
-        <VersionHistory history={versionHistory} onRestore={restoreVersion} onClose={() => setShowHistory(false)} />
-      )}
+{showHistory && (
+  <VersionHistory
+    history={versionHistory}
+    onRestore={restoreVersion}
+    onClose={() => setShowHistory(false)}
+  />
+)}
 
-      <FeatureTracker />
+<FeatureTracker />
+
     </div>
   );
 }
