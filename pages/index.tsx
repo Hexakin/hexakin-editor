@@ -13,29 +13,6 @@ const REFINE_OPTIONS = [
   "Custom",
 ];
 
-const PURPOSE_HELP: Record<string, string> = {
-  "Line Edit": "Improves grammar, clarity, and flow without changing meaning.",
-  "Paragraph Rewrite": "Rewrites entire paragraphs for structure, tone, and creativity.",
-  "Fiction Improve": "Enhances storytelling, character, and scene development.",
-  "Repetition Check": "Identifies and reduces repeated words or phrases.",
-};
-
-const STYLE_HELP: Record<string, string> = {
-  Default: "Neutral tone with light clarity improvements.",
-  Fantasy: "Whimsical, lyrical, and rich in worldbuilding.",
-  Formal: "Polished and professional; ideal for official use.",
-  Playful: "Lively, humorous, and expressive.",
-  "Science Fiction": "Crisp, imaginative, with futuristic style.",
-  "Dark Thriller": "Tense, moody, and suspense-driven.",
-};
-
-const EDITOR_TIPS: Record<string, string> = {
-  "Novel Editor": "Best for fiction manuscripts, narrative structure, and voice.",
-  "Email Editor": "Ideal for concise, polite communication.",
-  "Report Editor": "Suited for clarity, structure, and formal presentation.",
-  "Education/Local Council Editor": "Helpful for EHCPs, support plans, and accessibility documents.",
-};
-
 interface VersionPair {
   input: string;
   output: string;
@@ -65,15 +42,20 @@ export default function Home() {
     const handleSelection = () => {
       const selection = window.getSelection();
       const text = selection?.toString().trim();
-      if (text) setStoredSelection(text);
+      if (text) {
+        setStoredSelection(text);
+      }
     };
+
     document.addEventListener("mouseup", handleSelection);
     return () => document.removeEventListener("mouseup", handleSelection);
   }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("hexakin_versions");
-    if (saved) setVersionHistory(JSON.parse(saved));
+    if (saved) {
+      setVersionHistory(JSON.parse(saved));
+    }
   }, []);
 
   const updateHistory = (newVersion: VersionPair) => {
@@ -90,7 +72,9 @@ export default function Home() {
     setEditorType(version.editorType);
   };
 
-  const sanitize = (text: string) => text.replace(/^['"]+/, "").replace(/['"]+$/, "").trim();
+  const sanitize = (text: string) => {
+    return text.replace(/^['"]{1,3}/, "").replace(/['"]{1,3}$/, "").trim();
+  };
 
   const safeReplace = (original: string, target: string, replacement: string) => {
     const index = original.indexOf(target);
@@ -102,13 +86,16 @@ export default function Home() {
     setLoading(true);
     setEditedText("");
     setError("");
+
     try {
       const response = await fetch("/api/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input: inputText, purpose, style, editorType }),
       });
+
       const data = await response.json();
+
       if (response.ok && data.result) {
         const output = data.result;
         setEditedText(output);
@@ -120,6 +107,7 @@ export default function Home() {
       console.error("Edit error:", err);
       setError("Something went wrong during editing.");
     }
+
     setLoading(false);
   };
 
@@ -127,15 +115,23 @@ export default function Home() {
     if (!editedText) return;
     setLoading(true);
     setError("");
+
     const isCustom = selectedRefine === "Custom";
     const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
+
     try {
       const response = await fetch("/api/refine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: editedText, selected: storedSelection || "", instruction }),
+        body: JSON.stringify({
+          text: editedText,
+          selected: storedSelection || "",
+          instruction,
+        }),
       });
+
       const data = await response.json();
+
       if (response.ok && data.result) {
         const cleanResult = sanitize(data.result);
         if (storedSelection && editedText.includes(storedSelection)) {
@@ -152,6 +148,7 @@ export default function Home() {
       console.error("Refine error:", err);
       setError("Something went wrong during refinement.");
     }
+
     setLoading(false);
   };
 
@@ -163,7 +160,13 @@ export default function Home() {
     setError("");
   };
 
-  const toggleDarkMode = () => setDarkMode(!darkMode);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(editedText);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
 
   return (
     <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen p-6 transition-colors`}>
@@ -174,52 +177,38 @@ export default function Home() {
         </button>
       </header>
 
-      {/* Selection Dropdowns */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
-          <label className="block mb-1 font-semibold">Purpose</label>
-          <select
-            className="w-full border px-2 py-1 rounded"
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-          >
-            {Object.keys(PURPOSE_HELP).map((p) => (
-              <option key={p}>{p}</option>
-            ))}
+          <label className="block mb-1 font-semibold" title="Why you're editing this text (e.g., improve, rewrite, check repetition)">Purpose</label>
+          <select className="w-full border px-2 py-1 rounded" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+            <option>Line Edit</option>
+            <option>Paragraph Rewrite</option>
+            <option>Fiction Improve</option>
+            <option>Repetition Check</option>
           </select>
-          <p className="text-xs text-gray-500 mt-1 italic">{PURPOSE_HELP[purpose]}</p>
         </div>
-
         <div>
-          <label className="block mb-1 font-semibold">Style</label>
-          <select
-            className="w-full border px-2 py-1 rounded"
-            value={style}
-            onChange={(e) => setStyle(e.target.value)}
-          >
-            {Object.keys(STYLE_HELP).map((s) => (
-              <option key={s}>{s}</option>
-            ))}
+          <label className="block mb-1 font-semibold" title="The tone or genre style you want for the output">Style</label>
+          <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
+            <option>Default</option>
+            <option>Fantasy</option>
+            <option>Formal</option>
+            <option>Playful</option>
+            <option>Science Fiction</option>
+            <option>Dark Thriller</option>
           </select>
-          <p className="text-xs text-gray-500 mt-1 italic">{STYLE_HELP[style]}</p>
         </div>
-
         <div>
-          <label className="block mb-1 font-semibold">Editor Type</label>
-          <select
-            className="w-full border px-2 py-1 rounded"
-            value={editorType}
-            onChange={(e) => setEditorType(e.target.value)}
-          >
-            {Object.keys(EDITOR_TIPS).map((t) => (
-              <option key={t}>{t}</option>
-            ))}
+          <label className="block mb-1 font-semibold" title="The type of writing this is (e.g., a novel, report, email)">Editor Type</label>
+          <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
+            <option>Novel Editor</option>
+            <option>Email Editor</option>
+            <option>Report Editor</option>
+            <option>Education/Local Council Editor</option>
           </select>
-          <p className="text-xs text-gray-500 mt-1 italic">{EDITOR_TIPS[editorType]}</p>
         </div>
       </div>
 
-      {/* Input Text */}
       <div className="mb-4">
         <label className="block mb-1 font-semibold">Input Text</label>
         <textarea
@@ -230,7 +219,6 @@ export default function Home() {
         />
       </div>
 
-      {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 mb-4">
         <button onClick={handleEdit} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           {loading ? "Processing..." : "Submit"}
