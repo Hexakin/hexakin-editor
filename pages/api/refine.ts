@@ -1,5 +1,7 @@
+// pages/api/refine.ts
+
 import type { NextApiRequest, NextApiResponse } from "next";
-import { OpenAI } from "openai";
+import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,40 +9,40 @@ const openai = new OpenAI({
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   const { text, selected, instruction } = req.body;
 
   if (!text || !instruction) {
-    return res.status(400).json({ message: "Missing required fields." });
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
+  const context = selected
+    ? `Refine just the selected portion of the text according to the instruction.\n\nSelected Text:\n"""${selected}"""\n\nInstruction: ${instruction}`
+    : `Refine the entire text based on the following instruction: ${instruction}`;
+
   try {
-    const refiningText = selected?.trim() || text;
-
-    const prompt = `Refine the following text based on this instruction:
-
-Instruction: ${instruction}
-
-Text:
-"""
-${refiningText}
-"""
-
-Return only the revised version.`;
-
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert editor. Return only the refined version of the selected or full text. Do not explain or summarize.",
+        },
+        {
+          role: "user",
+          content: `${context}\n\nFull Text:\n"""${text}"""`,
+        },
+      ],
       temperature: 0.7,
     });
 
-    const result = completion.choices?.[0]?.message?.content?.trim() || "No result";
-
-    return res.status(200).json({ result });
+    const result = completion.choices[0]?.message?.content || "";
+    res.status(200).json({ result });
   } catch (error) {
     console.error("Refine error:", error);
-    return res.status(500).json({ message: "Refinement failed." });
+    res.status(500).json({ error: "Failed to refine text" });
   }
 }
