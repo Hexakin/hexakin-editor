@@ -18,11 +18,26 @@ export default function Home() {
 
     try {
       // Simulated response delay
-      setTimeout(() => {
-        setEditedText(`Edited version of your text based on: 
-        Purpose: ${purpose}, Style: ${style}, Editor: ${editorType}`);
-        setLoading(false);
-      }, 1500);
+  const response = await fetch("/api/edit", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    input: inputText,
+    purpose,
+    style,
+    editorType
+  }),
+});
+
+const data = await response.json();
+
+if (response.ok && data.result) {
+  setEditedText(data.result);
+} else {
+  setError("Failed to get a response from the editor.");
+}
+setLoading(false);
+
     } catch (err) {
       setError("Something went wrong.");
       setLoading(false);
