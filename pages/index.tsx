@@ -105,41 +105,49 @@ export default function Home() {
     setLoading(false);
   };
 
-  const handleRefine = async () => {
-    if (!editedText) return;
-    setLoading(true);
-    setError("");
-    const isCustom = selectedRefine === "Custom";
-    const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
-    try {
-      const response = await fetch("/api/refine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: editedText,
-          selected: storedSelection || "",
-          instruction,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok && data.result) {
-        const cleanResult = sanitize(data.result);
-        if (storedSelection && editedText.includes(storedSelection)) {
-          const updated = safeReplace(editedText, storedSelection, cleanResult);
-          setEditedText(updated);
-        } else {
-          setEditedText(cleanResult);
-        }
-        setRefinePrompt("");
+const handleRefine = async () => {
+  if (!editedText || !storedSelection) return;
+
+  setLoading(true);
+  setError("");
+  const isCustom = selectedRefine === "Custom";
+  const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
+
+  try {
+    const response = await fetch("/api/refine", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: editedText,
+        selected: storedSelection,
+        instruction,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.result) {
+      const refined = sanitize(data.result);
+
+      // Carefully replace only the stored selection
+      if (editedText.includes(storedSelection)) {
+        const updated = editedText.replace(storedSelection, refined);
+        setEditedText(updated);
       } else {
-        setError("Refinement failed.");
+        setError("Could not locate selection in text.");
       }
-    } catch (err) {
-      console.error("Refine error:", err);
-      setError("Something went wrong during refinement.");
+
+      setRefinePrompt("");
+    } else {
+      setError("Refinement failed.");
     }
-    setLoading(false);
-  };
+  } catch (err) {
+    console.error("Refine error:", err);
+    setError("Something went wrong during refinement.");
+  }
+
+  setLoading(false);
+};
 
   const handleClear = () => {
     setInputText("");
