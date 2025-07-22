@@ -181,117 +181,33 @@ export default function Home() {
         <div>
           <label className="block mb-1 font-semibold" title="Why you're editing this text (e.g., improve, rewrite, check repetition)">Purpose</label>
           <select className="w-full border px-2 py-1 rounded" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
-            <option>Line Edit</option>
-            <option>Paragraph Rewrite</option>
-            <option>Fiction Improve</option>
-            <option>Repetition Check</option>
+            <option title="Polish grammar, sentence flow and clarity">Line Edit</option>
+            <option title="Rewrite a whole paragraph with style and flow">Paragraph Rewrite</option>
+            <option title="Enhance narrative tone, pacing, and immersion">Fiction Improve</option>
+            <option title="Identify and reduce repetition of phrases">Repetition Check</option>
           </select>
         </div>
         <div>
           <label className="block mb-1 font-semibold" title="The tone or genre style you want for the output">Style</label>
           <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
-            <option>Default</option>
-            <option>Fantasy</option>
-            <option>Formal</option>
-            <option>Playful</option>
-            <option>Science Fiction</option>
-            <option>Dark Thriller</option>
+            <option title="Balanced, professional tone">Default</option>
+            <option title="Whimsical, magical or medieval tones">Fantasy</option>
+            <option title="Academic or business style">Formal</option>
+            <option title="Light, witty, humorous">Playful</option>
+            <option title="Futuristic and technical voice">Science Fiction</option>
+            <option title="Gritty, dark, suspenseful">Dark Thriller</option>
           </select>
         </div>
         <div>
           <label className="block mb-1 font-semibold" title="The type of writing this is (e.g., a novel, report, email)">Editor Type</label>
           <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
-            <option>Novel Editor</option>
-            <option>Email Editor</option>
-            <option>Report Editor</option>
-            <option>Education/Local Council Editor</option>
+            <option title="Best for story chapters, character prose and fiction scenes">Novel Editor</option>
+            <option title="Formal yet friendly email drafting">Email Editor</option>
+            <option title="Clarity and structure for formal business reports">Report Editor</option>
+            <option title="Precision for forms, EHCPs, education documents">Education/Local Council Editor</option>
           </select>
         </div>
       </div>
-
-      <div className="mb-4">
-        <label className="block mb-1 font-semibold">Input Text</label>
-        <textarea
-          className="w-full min-h-[200px] border px-3 py-2 rounded resize-y"
-          placeholder="Paste or type your text here..."
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={handleEdit} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          {loading ? "Processing..." : "Submit"}
-        </button>
-        <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">
-          Clear
-        </button>
-      </div>
-
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-
-      {editedText && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-1">
-            <label className="font-semibold">Edited Output</label>
-            <button
-              className="flex items-center text-sm hover:underline"
-              title="View Version History"
-              onClick={() => setShowHistory(!showHistory)}
-            >
-              <Clock size={18} className="mr-1" />
-              Version History
-            </button>
-          </div>
-
-          <div
-            ref={outputRef}
-            className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3"
-          >
-            {loading ? "Editing in progress..." : editedText}
-          </div>
-
-          <ExportButtons content={editedText} />
-
-          <label className="block mb-1 font-semibold">Refine Further</label>
-          <div className="flex flex-col md:flex-row gap-2 mb-2">
-            <select
-              className="border px-3 py-2 rounded w-full md:w-1/2"
-              value={selectedRefine}
-              onChange={(e) => setSelectedRefine(e.target.value)}
-            >
-              <option value="">Select refinement type...</option>
-              {REFINE_OPTIONS.map((opt) => (
-                <option key={opt}>{opt}</option>
-              ))}
-            </select>
-            {selectedRefine === "Custom" && (
-              <input
-                type="text"
-                placeholder="Enter your custom refinement"
-                className="border px-3 py-2 rounded w-full md:w-1/2"
-                value={refinePrompt}
-                onChange={(e) => setRefinePrompt(e.target.value)}
-              />
-            )}
-          </div>
-          <button
-            onClick={handleRefine}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            disabled={loading}
-          >
-            Refine Output
-          </button>
-        </div>
-      )}
-
-      {showHistory && (
-        <VersionHistory
-          history={versionHistory}
-          onRestore={restoreVersion}
-          onClose={() => setShowHistory(false)}
-        />
-      )}
 
       <FeatureTracker />
     </div>
