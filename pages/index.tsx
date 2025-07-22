@@ -1,4 +1,3 @@
-// index.tsx
 import { useState, useRef, useEffect } from "react";
 import FeatureTracker from "../components/FeatureTracker";
 import VersionHistory from "../components/VersionHistory";
@@ -47,7 +46,6 @@ export default function Home() {
         setStoredSelection(text);
       }
     };
-
     document.addEventListener("mouseup", handleSelection);
     return () => document.removeEventListener("mouseup", handleSelection);
   }, []);
@@ -87,16 +85,13 @@ export default function Home() {
     setLoading(true);
     setEditedText("");
     setError("");
-
     try {
       const response = await fetch("/api/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input: inputText, purpose, style, editorType }),
       });
-
       const data = await response.json();
-
       if (response.ok && data.result) {
         const output = data.result;
         setEditedText(output);
@@ -108,7 +103,6 @@ export default function Home() {
       console.error("Edit error:", err);
       setError("Something went wrong during editing.");
     }
-
     setLoading(false);
   };
 
@@ -116,10 +110,8 @@ export default function Home() {
     if (!editedText) return;
     setLoading(true);
     setError("");
-
     const isCustom = selectedRefine === "Custom";
     const instruction = isCustom ? refinePrompt : selectedRefine || "Refine the text.";
-
     try {
       const response = await fetch("/api/refine", {
         method: "POST",
@@ -130,9 +122,7 @@ export default function Home() {
           instruction,
         }),
       });
-
       const data = await response.json();
-
       if (response.ok && data.result) {
         const cleanResult = sanitize(data.result);
         if (storedSelection && editedText.includes(storedSelection)) {
@@ -149,7 +139,6 @@ export default function Home() {
       console.error("Refine error:", err);
       setError("Something went wrong during refinement.");
     }
-
     setLoading(false);
   };
 
@@ -159,10 +148,6 @@ export default function Home() {
     setRefinePrompt("");
     setStoredSelection("");
     setError("");
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(editedText);
   };
 
   const toggleDarkMode = () => {
@@ -180,98 +165,118 @@ export default function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
-          <label className="block mb-1 font-semibold" title="Why you're editing this text (e.g., improve, rewrite, check repetition)">Purpose</label>
+          <label className="block mb-1 font-semibold" title="Why you're editing this text">Purpose</label>
           <select className="w-full border px-2 py-1 rounded" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
-            <option title="Polish grammar, sentence flow and clarity">Line Edit</option>
-            <option title="Rewrite a whole paragraph with style and flow">Paragraph Rewrite</option>
-            <option title="Enhance narrative tone, pacing, and immersion">Fiction Improve</option>
-            <option title="Identify and reduce repetition of phrases">Repetition Check</option>
+            <option value="Line Edit" title="Improve grammar, flow, and clarity">Line Edit</option>
+            <option value="Paragraph Rewrite" title="Rebuild the paragraph's structure and tone">Paragraph Rewrite</option>
+            <option value="Fiction Improve" title="Boost storytelling, emotion, and immersion">Fiction Improve</option>
+            <option value="Repetition Check" title="Detect and reduce word/phrase repetition">Repetition Check</option>
           </select>
         </div>
         <div>
-          <label className="block mb-1 font-semibold" title="The tone or genre style you want for the output">Style</label>
+          <label className="block mb-1 font-semibold" title="Stylistic tone for the rewrite">Style</label>
           <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
-            <option title="Balanced, professional tone">Default</option>
-            <option title="Whimsical, magical or medieval tones">Fantasy</option>
-            <option title="Academic or business style">Formal</option>
-            <option title="Light, witty, humorous">Playful</option>
-            <option title="Futuristic and technical voice">Science Fiction</option>
-            <option title="Gritty, dark, suspenseful">Dark Thriller</option>
+            <option value="Default" title="Balanced, neutral editing">Default</option>
+            <option value="Fantasy" title="Epic, whimsical, or magical tone">Fantasy</option>
+            <option value="Formal" title="Professional, clean, academic tone">Formal</option>
+            <option value="Playful" title="Light, clever, amusing style">Playful</option>
+            <option value="Science Fiction" title="Futuristic, sleek, or technical">Science Fiction</option>
+            <option value="Dark Thriller" title="Gritty, suspenseful, moody tone">Dark Thriller</option>
           </select>
         </div>
         <div>
-          <label className="block mb-1 font-semibold" title="The type of writing this is (e.g., a novel, report, email)">Editor Type</label>
+          <label className="block mb-1 font-semibold" title="Text type to adjust the model’s behavior">Editor Type</label>
           <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
-            <option title="Best for story chapters, character prose and fiction scenes">Novel Editor</option>
-            <option title="Formal yet friendly email drafting">Email Editor</option>
-            <option title="Clarity and structure for formal business reports">Report Editor</option>
-            <option title="Precision for forms, EHCPs, education documents">Education/Local Council Editor</option>
+            <option value="Novel Editor" title="Best for creative writing and storytelling">Novel Editor</option>
+            <option value="Email Editor" title="Helpful for email drafts and replies">Email Editor</option>
+            <option value="Report Editor" title="Focuses on clarity for business reports">Report Editor</option>
+            <option value="Education/Local Council Editor" title="Supports forms, EHCPs, and local council docs">Education/Local Council Editor</option>
           </select>
         </div>
       </div>
 
+      <FeatureTracker />
+
       <div className="mb-4">
-        <label className="block mb-1 font-semibold">Input Text</label>
+        <label className="block font-semibold mb-1">Input Text</label>
         <textarea
-          className="w-full border px-2 py-1 rounded"
-          rows={5}
+          className="w-full h-32 border px-2 py-1 rounded"
+          placeholder="Paste or type your text here..."
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Paste or type your text here..."
         />
-        <div className="flex gap-2 mt-2">
-          <button onClick={handleEdit} className="bg-blue-600 text-white px-4 py-1 rounded" disabled={loading}>
-            Submit
-          </button>
-          <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-1 rounded">
-            Clear
-          </button>
-        </div>
       </div>
+
+      <div className="flex gap-2 mb-6">
+        <button onClick={handleEdit} disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded">
+          Submit
+        </button>
+        <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded">
+          Clear
+        </button>
+      </div>
+
+      {error && <p className="text-red-500 mb-4">{error}</p>}
 
       <div className="mb-4">
-        <label className="block mb-1 font-semibold">Edited Output</label>
-        <div ref={outputRef} className="border px-2 py-2 rounded min-h-[100px] whitespace-pre-wrap bg-gray-50 dark:bg-gray-800">
-          {editedText}
+        <label className="block font-semibold mb-1">Edited Output</label>
+        <div
+          ref={outputRef}
+          className="w-full min-h-[100px] border px-2 py-2 bg-gray-50 rounded whitespace-pre-wrap"
+        >
+          {loading ? "Editing in progress..." : editedText}
         </div>
-        <ExportButtons text={editedText} />
       </div>
 
-      <div className="mb-6">
-        <label className="block mb-1 font-semibold">Refine Further</label>
-        <div className="flex gap-2 items-center mb-2">
-          <select className="border px-2 py-1 rounded" value={selectedRefine} onChange={(e) => setSelectedRefine(e.target.value)}>
+      <ExportButtons text={editedText} />
+
+      <div className="my-4">
+        <label className="block font-semibold mb-1">Refine Further</label>
+        <div className="flex gap-2 mb-2">
+          <select
+            className="border px-2 py-1 rounded"
+            value={selectedRefine}
+            onChange={(e) => setSelectedRefine(e.target.value)}
+          >
+            <option value="">Select refinement type...</option>
             {REFINE_OPTIONS.map((opt) => (
               <option key={opt}>{opt}</option>
             ))}
           </select>
-          <button onClick={handleRefine} className="bg-purple-600 text-white px-4 py-1 rounded" disabled={loading}>
+
+          {selectedRefine === "Custom" && (
+            <input
+              type="text"
+              placeholder="Enter custom refinement"
+              className="border px-2 py-1 rounded w-full"
+              value={refinePrompt}
+              onChange={(e) => setRefinePrompt(e.target.value)}
+            />
+          )}
+
+          <button
+            onClick={handleRefine}
+            disabled={loading}
+            className="bg-fuchsia-600 text-white px-4 py-2 rounded"
+          >
             Refine Output
           </button>
         </div>
-        {selectedRefine === "Custom" && (
-          <textarea
-            className="w-full border px-2 py-1 rounded mb-2"
-            placeholder="Enter your custom refinement instruction"
-            value={refinePrompt}
-            onChange={(e) => setRefinePrompt(e.target.value)}
-          />
-        )}
-        {error && <p className="text-red-600 mt-2">{error}</p>}
       </div>
 
-      {showHistory ? (
-        <VersionHistory history={versionHistory} onRestore={restoreVersion} onClose={() => setShowHistory(false)} />
-      ) : (
-        versionHistory.length > 0 && (
-          <button onClick={() => setShowHistory(true)} className="text-sm underline flex items-center gap-1 mb-6">
-            <Clock size={16} />
-            Show Version History
-          </button>
-        )
-      )}
-
-      <FeatureTracker />
+      <div className="mt-6">
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="text-sm text-blue-700 hover:underline flex items-center gap-1"
+        >
+          <Clock size={16} /> {showHistory ? "Hide Version History" : "Show Version History"}
+        </button>
+        {showHistory && (
+          <div className="mt-3">
+            <VersionHistory history={versionHistory} onRestore={restoreVersion} onClose={() => setShowHistory(false)} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
