@@ -229,10 +229,7 @@ export default function Home() {
         <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">
           Clear
         </button>
-        <button onClick={handleCopy} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={!editedText}>
-          Copy Output
-        </button>
-      </div>
+       </div>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
