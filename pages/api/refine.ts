@@ -7,46 +7,55 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
+type Data = {
+  result?: string;
+  error?: string;
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   const { text, selected, instruction } = req.body;
 
-  if (!text || !selected || !instruction) {
-    return res.status(400).json({ error: "Missing required fields." });
+  if (!text || !instruction) {
+    return res.status(400).json({ error: "Missing input text or instruction." });
   }
 
-  const prompt = `
-You're a helpful editor. Refine only the selected text below based on the instruction. 
-Do not rephrase the full context — just rewrite the selected section. Return only the updated selection, nothing else.
-
-Instruction: ${instruction}
-
-Context:
-${text}
-
-Selected Text:
-"${selected}"
-
-Improved Selection:
-`;
-
   try {
-    const response = await openai.chat.completions.create({
+    let prompt = "";
+    let target = selected?.trim();
+
+    if (target && target.length > 0) {
+      prompt = `You are a helpful writing assistant. Revise the following selected text based on the user's instruction.\n\nInstruction: ${instruction}\n\nSelected Text:\n"${target}"\n\nRefined Version:\n`;
+    } else {
+      prompt = `You are a helpful writing assistant. Revise the following passage based on the user's instruction.\n\nInstruction: ${instruction}\n\nText:\n${text}\n\nRefined Version:\n`;
+    }
+
+    const completion = await openai.chat.completions.create({
       model: "gpt-4",
-      temperature: 0.7,
       messages: [
+        {
+          role: "system",
+          content: "You are an expert editor who rewrites text with precision and clarity.",
+        },
         {
           role: "user",
           content: prompt,
         },
       ],
+      temperature: 0.7,
     });
 
-    const result = response.choices[0].message.content?.trim();
-    res.status(200).json({ result });
-  } catch (err) {
-    console.error("Refine error:", err);
-    res.status(500).json({ error: "Failed to process refinement." });
+    const result = completion.choices[0].message.content?.trim();
+    if (!result) {
+      return res.status(500).json({ error: "No response from OpenAI." });
+    }
+
+    return res.status(200).json({ result });
+  } catch (error: any) {
+    console.error("Refine API error:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
