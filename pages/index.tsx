@@ -4,6 +4,7 @@ import FeatureTracker from "../components/FeatureTracker";
 export default function Home() {
   const [inputText, setInputText] = useState("");
   const [editedText, setEditedText] = useState("");
+  const [refinePrompt, setRefinePrompt] = useState("");
   const [purpose, setPurpose] = useState("Line Edit");
   const [style, setStyle] = useState("Default");
   const [editorType, setEditorType] = useState("Novel Editor");
@@ -52,13 +53,17 @@ export default function Home() {
       const response = await fetch("/api/refine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: editedText }),
+        body: JSON.stringify({
+          text: editedText,
+          instruction: refinePrompt || "Refine the text to improve flow and clarity.",
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.result) {
         setEditedText(data.result);
+        setRefinePrompt(""); // Clear the box after use
       } else {
         setError("Refinement failed.");
       }
@@ -73,6 +78,7 @@ export default function Home() {
   const handleClear = () => {
     setInputText("");
     setEditedText("");
+    setRefinePrompt("");
     setError("");
   };
 
@@ -169,23 +175,35 @@ export default function Home() {
         >
           Copy Output
         </button>
-        <button
-          onClick={handleRefine}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-          disabled={!editedText}
-        >
-          Refine Output
-        </button>
       </div>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
-      <div className="mb-6">
-        <label className="block mb-1 font-semibold">Edited Output</label>
-        <div className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap">
-          {loading ? "Editing in progress..." : editedText}
+      {editedText && (
+        <div className="mb-6">
+          <label className="block mb-1 font-semibold">Edited Output</label>
+          <div className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3">
+            {loading ? "Editing in progress..." : editedText}
+          </div>
+
+          <label className="block mb-1 font-semibold">Refine Further (optional)</label>
+          <input
+            type="text"
+            placeholder="e.g. Make it sound more urgent"
+            className="w-full border px-3 py-2 rounded mb-2"
+            value={refinePrompt}
+            onChange={(e) => setRefinePrompt(e.target.value)}
+          />
+
+          <button
+            onClick={handleRefine}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            disabled={loading || !editedText}
+          >
+            Refine Output
+          </button>
         </div>
-      </div>
+      )}
 
       <FeatureTracker />
     </div>

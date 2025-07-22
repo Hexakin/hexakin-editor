@@ -1,4 +1,3 @@
-// pages/api/refine.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { OpenAI } from "openai";
 
@@ -11,25 +10,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { text } = req.body;
+  const { text, instruction } = req.body;
 
-  if (!text) {
-    return res.status(400).json({ message: "Missing text to refine." });
+  if (!text || !instruction) {
+    return res.status(400).json({ message: "Missing required fields." });
   }
 
   try {
-    const prompt = `The following text was previously edited. Please refine it further by improving sentence flow, eliminating clunky phrasing, and subtly enhancing its tone and clarity. Keep the voice consistent.
+    const prompt = `You are a writing assistant. Please refine the following text according to this instruction:
 
+Instruction: ${instruction}
+
+Text:
 """
 ${text}
 """
 
-Return only the improved version.`;
+Return only the revised version.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.6,
+      temperature: 0.7,
     });
 
     const result = completion.choices?.[0]?.message?.content?.trim() || "No result";
