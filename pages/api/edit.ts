@@ -2,7 +2,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { text, mode } = req.body;
+const { text, mode, tone } = req.body;
+
 
   if (!text || !mode) {
     return res.status(400).json({ error: 'Missing text or mode.' });
@@ -19,16 +20,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       body: JSON.stringify({
         model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: `You are a helpful and precise editor. Please rewrite the user's text with the following style: ${mode}`
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
+messages: [
+  {
+    role: "system",
+    content:
+      mode === "Paragraph Edit"
+        ? "You are a helpful and precise editor. Edit the text with paragraph-level fluency and clarity improvements. Avoid changing the author’s style unless clarity is at risk."
+        : `You are a helpful and precise editor. Please rewrite the user's text with the following style: ${mode}`,
+  },
+  {
+    role: "user",
+    content: text,
+  },
+],
+
+
         temperature: 0.7
       })
     });
