@@ -1,10 +1,8 @@
-export interface ExportProps {
+interface ExportProps {
   text: string;
 }
 
 export default function ExportButtons({ text }: ExportProps) {
-  // ...
-
   const handleDownload = () => {
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -24,10 +22,20 @@ export default function ExportButtons({ text }: ExportProps) {
     }
   };
 
+  const handleCopy = () => {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(text).catch((err) => {
+        alert("Copy failed: " + err);
+      });
+    } else {
+      alert("Copy not supported on this browser.");
+    }
+  };
+
   return (
     <div className="flex gap-2 mb-3">
       <button
-        onClick={() => navigator.clipboard.writeText(text)}
+        onClick={handleCopy}
         className="bg-gray-300 text-black px-3 py-1 rounded hover:bg-gray-400 text-sm"
       >
         Copy
