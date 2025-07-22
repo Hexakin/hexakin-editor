@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import FeatureTracker from "../components/FeatureTracker";
 import VersionHistory from "../components/VersionHistory";
 import ExportButtons from "../components/ExportButtons";
 import { Clock } from "lucide-react";
@@ -194,8 +193,6 @@ export default function Home() {
           </select>
         </div>
       </div>
-
-      <FeatureTracker />
 
       <div className="mb-4">
         <label className="block font-semibold mb-1">Input Text</label>
