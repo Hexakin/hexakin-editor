@@ -25,7 +25,6 @@ export default function Home() {
 
   const outputRef = useRef<HTMLDivElement>(null);
 
-  // Capture selection when user clicks anywhere inside the output box
   useEffect(() => {
     const handleSelection = () => {
       const selection = window.getSelection();
@@ -38,6 +37,23 @@ export default function Home() {
     document.addEventListener("mouseup", handleSelection);
     return () => document.removeEventListener("mouseup", handleSelection);
   }, []);
+
+  const sanitize = (text: string) => {
+    return text
+      .replace(/^["']{1,3}/, "")
+      .replace(/["']{1,3}$/, "")
+      .trim();
+  };
+
+  const safeReplace = (original: string, target: string, replacement: string) => {
+    const index = original.indexOf(target);
+    if (index === -1) return original;
+    return (
+      original.slice(0, index) +
+      replacement +
+      original.slice(index + target.length)
+    );
+  };
 
   const handleEdit = async () => {
     setLoading(true);
@@ -93,12 +109,15 @@ export default function Home() {
       const data = await response.json();
 
       if (response.ok && data.result) {
-        if (storedSelection) {
-          const newText = editedText.replace(storedSelection, data.result);
-          setEditedText(newText);
+        const cleanResult = sanitize(data.result);
+
+        if (storedSelection && editedText.includes(storedSelection)) {
+          const updated = safeReplace(editedText, storedSelection, cleanResult);
+          setEditedText(updated);
         } else {
-          setEditedText(data.result);
+          setEditedText(cleanResult);
         }
+
         setRefinePrompt("");
       } else {
         setError("Refinement failed.");
