@@ -1,3 +1,4 @@
+// index.tsx
 import { useState, useRef, useEffect } from "react";
 import FeatureTracker from "../components/FeatureTracker";
 import VersionHistory from "../components/VersionHistory";
@@ -208,6 +209,67 @@ export default function Home() {
           </select>
         </div>
       </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 font-semibold">Input Text</label>
+        <textarea
+          className="w-full border px-2 py-1 rounded"
+          rows={5}
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder="Paste or type your text here..."
+        />
+        <div className="flex gap-2 mt-2">
+          <button onClick={handleEdit} className="bg-blue-600 text-white px-4 py-1 rounded" disabled={loading}>
+            Submit
+          </button>
+          <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-1 rounded">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 font-semibold">Edited Output</label>
+        <div ref={outputRef} className="border px-2 py-2 rounded min-h-[100px] whitespace-pre-wrap bg-gray-50 dark:bg-gray-800">
+          {editedText}
+        </div>
+        <ExportButtons text={editedText} />
+      </div>
+
+      <div className="mb-6">
+        <label className="block mb-1 font-semibold">Refine Further</label>
+        <div className="flex gap-2 items-center mb-2">
+          <select className="border px-2 py-1 rounded" value={selectedRefine} onChange={(e) => setSelectedRefine(e.target.value)}>
+            {REFINE_OPTIONS.map((opt) => (
+              <option key={opt}>{opt}</option>
+            ))}
+          </select>
+          <button onClick={handleRefine} className="bg-purple-600 text-white px-4 py-1 rounded" disabled={loading}>
+            Refine Output
+          </button>
+        </div>
+        {selectedRefine === "Custom" && (
+          <textarea
+            className="w-full border px-2 py-1 rounded mb-2"
+            placeholder="Enter your custom refinement instruction"
+            value={refinePrompt}
+            onChange={(e) => setRefinePrompt(e.target.value)}
+          />
+        )}
+        {error && <p className="text-red-600 mt-2">{error}</p>}
+      </div>
+
+      {showHistory ? (
+        <VersionHistory history={versionHistory} onRestore={restoreVersion} onClose={() => setShowHistory(false)} />
+      ) : (
+        versionHistory.length > 0 && (
+          <button onClick={() => setShowHistory(true)} className="text-sm underline flex items-center gap-1 mb-6">
+            <Clock size={16} />
+            Show Version History
+          </button>
+        )
+      )}
 
       <FeatureTracker />
     </div>
