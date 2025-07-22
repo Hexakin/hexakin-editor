@@ -23,22 +23,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.status(400).json({ error: "Missing input text or instruction." });
   }
 
+  const hasSelection = selected?.trim().length > 0;
+
+  const prompt = hasSelection
+    ? `You are a precise editor. Revise the selected text based on the user's instruction.\n\nInstruction: ${instruction}\n\nSelected Text: "${selected}"\n\nReturn ONLY the rewritten version. Do not include the original or any commentary.`
+    : `You are a helpful editor. Revise the following passage based on the user's instruction.\n\nInstruction: ${instruction}\n\nText:\n${text}\n\nReturn ONLY the rewritten version of the full passage.`;
+
   try {
-    let prompt = "";
-    let target = selected?.trim();
-
-    if (target && target.length > 0) {
-      prompt = `You are a helpful writing assistant. Revise the following selected text based on the user's instruction.\n\nInstruction: ${instruction}\n\nSelected Text:\n"${target}"\n\nRefined Version:\n`;
-    } else {
-      prompt = `You are a helpful writing assistant. Revise the following passage based on the user's instruction.\n\nInstruction: ${instruction}\n\nText:\n${text}\n\nRefined Version:\n`;
-    }
-
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are an expert editor who rewrites text with precision and clarity.",
+          content: "You are a precise and helpful writing assistant.",
         },
         {
           role: "user",
@@ -48,14 +45,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       temperature: 0.7,
     });
 
-    const result = completion.choices[0].message.content?.trim();
-    if (!result) {
-      return res.status(500).json({ error: "No response from OpenAI." });
-    }
+    let result = completion.choices[0].message.content?.trim() || "";
 
-    return res.status(200).json({ result });
+    // Sanitize GPT’s output (e.g., remove stray quotes or repeated text)
+    result = result.replace(/^["']+|["']+$/g, "").replace(/\s+/g, " ").trim();
+
+    res.status(200).json({ result });
   } catch (error: any) {
     console.error("Refine API error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 }
