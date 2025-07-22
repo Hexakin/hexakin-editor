@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import FeatureTracker from "../components/FeatureTracker";
+import VersionHistory from "../components/VersionHistory";
+import { Clock } from "lucide-react";
 
 const REFINE_OPTIONS = [
   "Make it more vivid",
@@ -9,6 +11,14 @@ const REFINE_OPTIONS = [
   "Make it humorous",
   "Custom",
 ];
+
+interface VersionPair {
+  input: string;
+  output: string;
+  purpose: string;
+  style: string;
+  editorType: string;
+}
 
 export default function Home() {
   const [inputText, setInputText] = useState("");
@@ -22,6 +32,8 @@ export default function Home() {
   const [error, setError] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [storedSelection, setStoredSelection] = useState("");
+  const [versionHistory, setVersionHistory] = useState<VersionPair[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -38,21 +50,35 @@ export default function Home() {
     return () => document.removeEventListener("mouseup", handleSelection);
   }, []);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("hexakin_versions");
+    if (saved) {
+      setVersionHistory(JSON.parse(saved));
+    }
+  }, []);
+
+  const updateHistory = (newVersion: VersionPair) => {
+    const updated = [newVersion, ...versionHistory.slice(0, 4)];
+    setVersionHistory(updated);
+    localStorage.setItem("hexakin_versions", JSON.stringify(updated));
+  };
+
+  const restoreVersion = (version: VersionPair) => {
+    setInputText(version.input);
+    setEditedText(version.output);
+    setPurpose(version.purpose);
+    setStyle(version.style);
+    setEditorType(version.editorType);
+  };
+
   const sanitize = (text: string) => {
-    return text
-      .replace(/^["']{1,3}/, "")
-      .replace(/["']{1,3}$/, "")
-      .trim();
+    return text.replace(/^["']{1,3}/, "").replace(/["']{1,3}$/, "").trim();
   };
 
   const safeReplace = (original: string, target: string, replacement: string) => {
     const index = original.indexOf(target);
     if (index === -1) return original;
-    return (
-      original.slice(0, index) +
-      replacement +
-      original.slice(index + target.length)
-    );
+    return original.slice(0, index) + replacement + original.slice(index + target.length);
   };
 
   const handleEdit = async () => {
@@ -64,18 +90,15 @@ export default function Home() {
       const response = await fetch("/api/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: inputText,
-          purpose,
-          style,
-          editorType,
-        }),
+        body: JSON.stringify({ input: inputText, purpose, style, editorType }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.result) {
-        setEditedText(data.result);
+        const output = data.result;
+        setEditedText(output);
+        updateHistory({ input: inputText, output, purpose, style, editorType });
       } else {
         setError("Failed to get a response from the editor.");
       }
@@ -110,14 +133,12 @@ export default function Home() {
 
       if (response.ok && data.result) {
         const cleanResult = sanitize(data.result);
-
         if (storedSelection && editedText.includes(storedSelection)) {
           const updated = safeReplace(editedText, storedSelection, cleanResult);
           setEditedText(updated);
         } else {
           setEditedText(cleanResult);
         }
-
         setRefinePrompt("");
       } else {
         setError("Refinement failed.");
@@ -155,6 +176,7 @@ export default function Home() {
         </button>
       </header>
 
+      {/* Mode/Style/Editor selection */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
           <label className="block mb-1 font-semibold">Purpose</label>
@@ -165,7 +187,6 @@ export default function Home() {
             <option>Repetition Check</option>
           </select>
         </div>
-
         <div>
           <label className="block mb-1 font-semibold">Style</label>
           <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
@@ -177,7 +198,6 @@ export default function Home() {
             <option>Dark Thriller</option>
           </select>
         </div>
-
         <div>
           <label className="block mb-1 font-semibold">Editor Type</label>
           <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
@@ -189,6 +209,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Input */}
       <div className="mb-4">
         <label className="block mb-1 font-semibold">Input Text</label>
         <textarea
@@ -199,6 +220,7 @@ export default function Home() {
         />
       </div>
 
+      {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 mb-4">
         <button onClick={handleEdit} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           {loading ? "Processing..." : "Submit"}
@@ -215,27 +237,31 @@ export default function Home() {
 
       {editedText && (
         <div className="mb-6">
-          <label className="block mb-1 font-semibold">Edited Output</label>
-          <div
-            ref={outputRef}
-            className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3"
-          >
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-semibold">Edited Output</label>
+            <button
+              className="flex items-center text-sm hover:underline"
+              title="View Version History"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <Clock size={18} className="mr-1" />
+              Version History
+            </button>
+          </div>
+
+          <div className="w-full min-h-[150px] border px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 whitespace-pre-wrap mb-3">
             {loading ? "Editing in progress..." : editedText}
           </div>
 
+          {/* Refinement controls */}
           <label className="block mb-1 font-semibold">Refine Further</label>
           <div className="flex flex-col md:flex-row gap-2 mb-2">
-            <select
-              className="border px-3 py-2 rounded w-full md:w-1/2"
-              value={selectedRefine}
-              onChange={(e) => setSelectedRefine(e.target.value)}
-            >
+            <select className="border px-3 py-2 rounded w-full md:w-1/2" value={selectedRefine} onChange={(e) => setSelectedRefine(e.target.value)}>
               <option value="">Select refinement type...</option>
               {REFINE_OPTIONS.map((opt) => (
                 <option key={opt}>{opt}</option>
               ))}
             </select>
-
             {selectedRefine === "Custom" && (
               <input
                 type="text"
@@ -246,15 +272,14 @@ export default function Home() {
               />
             )}
           </div>
-
-          <button
-            onClick={handleRefine}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            disabled={loading}
-          >
+          <button onClick={handleRefine} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700" disabled={loading}>
             Refine Output
           </button>
         </div>
+      )}
+
+      {showHistory && (
+        <VersionHistory history={versionHistory} onRestore={restoreVersion} onClose={() => setShowHistory(false)} />
       )}
 
       <FeatureTracker />
