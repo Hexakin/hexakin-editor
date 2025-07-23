@@ -6,6 +6,7 @@ import { Clock } from "lucide-react";
 import ChatSidebar from "../components/ChatSidebar";
 import DiffView from "../components/DiffView";
 import EchoTracker from "../components/EchoTracker";
+import ToneAnalyzer from "../components/ToneAnalyzer";
 
 const REFINE_OPTIONS = [
   "Make it more vivid",
@@ -294,6 +295,8 @@ export default function Home() {
       </div>
       {/* 📌 SECTION: Echo / Pattern Tracker */}
 <EchoTracker text={inputText} />
+{/* 📌 SECTION: Tone / Formality Analysis */}
+<ToneAnalyzer text={inputText} />
       </div> {/* End of main editor content */}
       <div className="w-full md:w-[320px] border-l border-gray-300 dark:border-gray-800">
         <ChatSidebar />
