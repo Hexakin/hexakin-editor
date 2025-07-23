@@ -1,3 +1,4 @@
+
 // components/ToneAnalyzer.tsx
 import { useState } from "react";
 
@@ -22,7 +23,6 @@ const TONE_OPTIONS = [
 
 export default function ToneAnalyzer({ text }: Props) {
   const [targetTone, setTargetTone] = useState("");
-  const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,7 +31,6 @@ export default function ToneAnalyzer({ text }: Props) {
 
     setLoading(true);
     setError("");
-    setResult("");
 
     try {
       const res = await fetch("/api/tone", {
@@ -42,7 +41,12 @@ export default function ToneAnalyzer({ text }: Props) {
 
       const data = await res.json();
       if (res.ok && data.result) {
-        setResult(data.result);
+        if (typeof window !== "undefined" && (window as any).HexakinChatInject) {
+          const label = targetTone
+            ? `🎯 *Tone Analysis (Target: ${targetTone}):*\n\n`
+            : "🎯 *Tone / Formality Analysis:*\n\n";
+          (window as any).HexakinChatInject(label + data.result);
+        }
       } else {
         setError("No analysis returned.");
       }
@@ -58,7 +62,7 @@ export default function ToneAnalyzer({ text }: Props) {
     <div className="mt-6">
       <h2 className="text-lg font-semibold mb-2">Tone / Formality Analysis</h2>
 
-      {/* 📌 Desired Tone Selector */}
+      {/* Desired Tone Selector */}
       <label className="block mb-1 text-sm font-medium">Desired Tone (optional)</label>
       <select
         value={targetTone}
@@ -75,18 +79,12 @@ export default function ToneAnalyzer({ text }: Props) {
       <button
         onClick={handleAnalyze}
         disabled={loading}
-        className="px-4 py-2 bg-sky-600 text-white rounded mb-3"
+        className="px-4 py-2 bg-sky-600 text-white rounded"
       >
-        {loading ? "Analyzing..." : "Analyze Tone"}
+        {loading ? "Analyzing..." : "Send to Assistant"}
       </button>
 
-      {error && <p className="text-red-500 mb-2">{error}</p>}
-
-      {result && (
-        <pre className="whitespace-pre-wrap bg-gray-100 text-sm p-3 rounded border border-gray-300">
-          {result}
-        </pre>
-      )}
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
   );
 }

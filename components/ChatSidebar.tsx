@@ -1,68 +1,63 @@
+
+// components/ChatSidebar.tsx
 import { useState } from "react";
 
-export default function ChatSidebar() {
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+interface Message {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
 
-  const handleSend = async () => {
+export default function ChatSidebar() {
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const handleUserSend = async (input: string) => {
     if (!input.trim()) return;
 
-    const newMessages = [
-      ...messages,
-      { role: "user" as "user", content: input }
-    ];
-    setMessages(newMessages);
-    setInput("");
-    setLoading(true);
-    setError("");
+    const userMessage: Message = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
 
     try {
-      const response = await fetch("/api/editor-chat", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages.slice(-5) }), // Only send last 5 messages for lightweight context
+        body: JSON.stringify({ message: input }),
       });
-
-      const data = await response.json();
-      if (response.ok && data.result) {
-        setMessages([...newMessages, { role: "assistant", content: data.result }]);
-      } else {
-        setError("Something went wrong with the assistant response.");
+      const data = await res.json();
+      if (res.ok && data.result) {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.result }]);
       }
     } catch (err) {
-      setError("Failed to connect to the assistant.");
+      setMessages((prev) => [...prev, { role: "assistant", content: "Error: failed to respond." }]);
     }
-
-    setLoading(false);
   };
 
-  return (
-    <div className="w-full md:w-[320px] border-l p-4 bg-gray-50 dark:bg-gray-900 text-sm flex flex-col">
-      <h2 className="text-lg font-semibold mb-2">🧠 Editorial Chat Assistant</h2>
+  // New helper to allow external components to send messages in
+  const injectAssistantMessage = (content: string) => {
+    setMessages((prev) => [...prev, { role: "assistant", content }]);
+  };
 
-      <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`p-2 rounded ${msg.role === "user" ? "bg-blue-100 dark:bg-blue-900" : "bg-gray-200 dark:bg-gray-700"}`}>
-            <strong>{msg.role === "user" ? "You" : "AI"}:</strong> {msg.content}
+  // Expose injector globally (temporary approach)
+  if (typeof window !== "undefined") {
+    (window as any).HexakinChatInject = injectAssistantMessage;
+  }
+
+  return (
+    <aside className="h-screen overflow-y-auto p-4 w-full md:w-[320px] border-l border-gray-300 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm">
+      <h2 className="font-semibold text-lg mb-3">Assistant</h2>
+      <div className="space-y-2">
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={`p-2 rounded ${
+              msg.role === "user"
+                ? "bg-blue-100 text-blue-900"
+                : "bg-gray-100 text-black dark:bg-gray-800 dark:text-white"
+            }`}
+          >
+            <strong>{msg.role === "user" ? "You" : "Editor"}:</strong> {msg.content}
           </div>
         ))}
-        {loading && <p className="italic text-gray-500">Thinking...</p>}
-        {error && <p className="text-red-500">{error}</p>}
       </div>
-
-      <div className="flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask for help..."
-          className="flex-1 border px-2 py-1 rounded"
-        />
-        <button onClick={handleSend} disabled={loading} className="bg-blue-600 text-white px-3 py-1 rounded">
-          Send
-        </button>
-      </div>
-    </div>
+    </aside>
   );
 }

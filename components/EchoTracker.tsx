@@ -1,3 +1,4 @@
+
 // components/EchoTracker.tsx
 import { useState } from "react";
 
@@ -6,7 +7,6 @@ interface Props {
 }
 
 export default function EchoTracker({ text }: Props) {
-  const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -15,7 +15,6 @@ export default function EchoTracker({ text }: Props) {
 
     setLoading(true);
     setError("");
-    setResult("");
 
     try {
       const res = await fetch("/api/echo", {
@@ -26,7 +25,9 @@ export default function EchoTracker({ text }: Props) {
 
       const data = await res.json();
       if (res.ok && data.result) {
-        setResult(data.result);
+        if (typeof window !== "undefined" && (window as any).HexakinChatInject) {
+          (window as any).HexakinChatInject("📊 *Echo Analysis Result:*\n\n" + data.result);
+        }
       } else {
         setError("No echoes found.");
       }
@@ -44,18 +45,11 @@ export default function EchoTracker({ text }: Props) {
       <button
         onClick={handleAnalyze}
         disabled={loading}
-        className="px-4 py-2 bg-indigo-600 text-white rounded mb-3"
+        className="px-4 py-2 bg-indigo-600 text-white rounded"
       >
-        {loading ? "Analyzing..." : "Analyze Echoes"}
+        {loading ? "Analyzing..." : "Send to Assistant"}
       </button>
-
-      {error && <p className="text-red-500 mb-2">{error}</p>}
-
-      {result && (
-        <pre className="whitespace-pre-wrap bg-gray-100 text-sm p-3 rounded border border-gray-300">
-          {result}
-        </pre>
-      )}
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
   );
 }
