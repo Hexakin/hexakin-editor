@@ -11,10 +11,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { text } = req.body;
+  const { text, targetTone } = req.body;
+
   if (!text || typeof text !== "string") {
     return res.status(400).json({ message: "Missing or invalid text." });
   }
+
+  const toneInstruction = targetTone
+    ? `Compare the actual tone with the desired tone of "${targetTone}". If they differ, explain the difference and how the text could shift toward the desired tone.`
+    : "Detect the tone and formality of the text. Suggest improvements if needed.";
 
   const prompt = `
 Analyze the following text for overall tone and formality level.
@@ -22,7 +27,7 @@ Analyze the following text for overall tone and formality level.
 Return:
 - 🎭 Tone: (e.g. optimistic, sarcastic, professional, moody, passive-aggressive)
 - 🧑‍⚖️ Formality: (e.g. formal, casual, neutral)
-- 💡 Suggestions: If appropriate, suggest ways to shift the tone or improve consistency.
+- 💡 Suggestions: ${toneInstruction}
 
 TEXT:
 """
