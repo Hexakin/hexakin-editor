@@ -292,6 +292,8 @@ export default function Home() {
           </div>
         )}
       </div>
+      {/* 📌 SECTION: Echo / Pattern Tracker */}
+<EchoTracker text={inputText} />
       </div> {/* End of main editor content */}
       <div className="w-full md:w-[320px] border-l border-gray-300 dark:border-gray-800">
         <ChatSidebar />
