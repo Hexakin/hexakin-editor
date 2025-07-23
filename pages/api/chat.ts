@@ -18,17 +18,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: "Missing or invalid message." });
   }
 
-  const prompt = `
-You are an editorial assistant. Respond to the user's message with helpful guidance, edits, suggestions, or rewrites.
+  // Pull last injected message from global if it exists
+  const context = (global as any).HexakinLastInject || "";
+  const fullPrompt = context
+    ? `Based on the following editorial insight, respond to the user's request.
 
-User message:
-"${message}"
-`;
+INSIGHT:
+${context}
+
+USER REQUEST:
+${message}`
+    : message;
 
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: fullPrompt }],
       temperature: 0.7,
     });
 
