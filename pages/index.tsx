@@ -3,6 +3,7 @@ import FeatureTracker from "../components/FeatureTracker";
 import VersionHistory from "../components/VersionHistory";
 import ExportButtons from "../components/ExportButtons";
 import { Clock } from "lucide-react";
+import ChatSidebar from "../components/ChatSidebar";
 
 const REFINE_OPTIONS = [
   "Make it more vivid",
@@ -155,7 +156,10 @@ export default function Home() {
   };
 
   return (
-    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen p-6 transition-colors`}>
+    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen transition-colors`}>
+      <div className="flex flex-col md:flex-row">
+        <div className="flex-1 p-6">
+
       <header className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Hexakin Editor</h1>
         <button onClick={toggleDarkMode} className="border px-3 py-1 rounded">
@@ -275,6 +279,12 @@ export default function Home() {
           </div>
         )}
       </div>
+      </div> {/* End of main editor content */}
+      <div className="w-full md:w-[320px] border-l border-gray-300 dark:border-gray-800">
+        <ChatSidebar />
+      </div>
+    </div>
     </div>
   );
 }
+
