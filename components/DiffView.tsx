@@ -1,5 +1,5 @@
 // components/DiffView.tsx
-import { DiffMatchPatch, diff_match_patch, Diff } from 'diff-match-patch'
+import { diff_match_patch, Diff } from 'diff-match-patch'
 import { useEffect, useState } from 'react'
 
 interface DiffViewProps {
@@ -11,7 +11,7 @@ export default function DiffView({ original, edited }: DiffViewProps) {
   const [diffHtml, setDiffHtml] = useState<string>('')
 
   useEffect(() => {
-    const dmp: diff_match_patch = new DiffMatchPatch()
+    const dmp = new diff_match_patch()
     const diffs: Diff[] = dmp.diff_main(original, edited)
     dmp.diff_cleanupSemantic(diffs)
 
