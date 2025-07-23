@@ -4,6 +4,7 @@ import VersionHistory from "../components/VersionHistory";
 import ExportButtons from "../components/ExportButtons";
 import { Clock } from "lucide-react";
 import ChatSidebar from "../components/ChatSidebar";
+import DiffView from "../components/DiffView";
 
 const REFINE_OPTIONS = [
   "Make it more vivid",
@@ -36,6 +37,7 @@ export default function Home() {
   const [storedSelection, setStoredSelection] = useState("");
   const [versionHistory, setVersionHistory] = useState<VersionPair[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
 
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -227,6 +229,16 @@ export default function Home() {
           className="w-full min-h-[100px] border px-2 py-2 bg-gray-50 rounded whitespace-pre-wrap"
         >
           {loading ? "Editing in progress..." : editedText}
+          <button
+  onClick={() => setShowDiff(!showDiff)}
+  className="mt-2 text-sm text-blue-700 underline"
+>
+  {showDiff ? "Hide Differences" : "Show Differences"}
+</button>
+{showDiff && (
+  <DiffView original={inputText} edited={editedText} />
+)}
+
         </div>
       </div>
 
