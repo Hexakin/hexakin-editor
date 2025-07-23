@@ -5,6 +5,7 @@ import ExportButtons from "../components/ExportButtons";
 import { Clock } from "lucide-react";
 import ChatSidebar from "../components/ChatSidebar";
 import DiffView from "../components/DiffView";
+import EchoTracker from "../components/EchoTracker";
 
 const REFINE_OPTIONS = [
   "Make it more vivid",
