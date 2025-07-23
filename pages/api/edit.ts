@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { OpenAI } from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Make sure this is set in .env.local
+  apiKey: process.env.OPENAI_API_KEY, // Ensure this is set in .env.local
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,26 +13,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { input, purpose, style, editorType } = req.body;
 
-  if (!input || !purpose || !style || !editorType) {
-    return res.status(400).json({ message: "Missing required fields." });
+  if (typeof input !== "string" || !input.trim()) {
+    return res.status(400).json({ message: "Missing or invalid input text." });
   }
 
-  try {
-    const prompt = `You are an intelligent, style-aware editor helping the user refine their writing.
+  const editPurpose = purpose || "Improve clarity and style.";
+  const editStyle = style || "Default";
+  const editType = editorType || "General document";
 
-Editing Purpose: ${purpose}
-Style: ${style}
-Editor Type: ${editorType}
+  const prompt = `
+You are an expert writing editor tasked with improving the user's writing.
 
-Here is the user's text:
-"""
+🎯 Purpose: ${editPurpose}
+🖋️ Style: ${editStyle}
+📝 Editor Type: ${editType}
+
+--- BEGIN TEXT ---
 ${input}
-"""
+--- END TEXT ---
 
-Please return the improved version of the text only. Preserve the original voice unless clarity or tone requires an adjustment.`;
+Please return only the improved version of the text. Keep formatting and tone unless the instruction says otherwise.
+`;
 
+  try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4", // Use "gpt-3.5-turbo" if needed
+      model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
