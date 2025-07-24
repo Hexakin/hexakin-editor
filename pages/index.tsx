@@ -2,43 +2,60 @@ import { useState } from "react";
 import ChatSidebar from "../components/ChatSidebar";
 import HexakinEditor from "../components/HexakinEditor";
 import LongformEditor from "../components/LongformEditor";
+import { useAppContext, Theme } from '../context/AppContext'; // Import the context and Theme type
 
-// Note how much simpler this file is now.
-// All the complex state for injection has been moved to AppContext.
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'editor' | 'draft'>('editor');
-  const [darkMode, setDarkMode] = useState(false);
+  
+  // Get the theme state and setter from our global context
+  const { theme, setTheme } = useAppContext();
 
-  const toggleDarkMode = () => setDarkMode(!darkMode);
+  // We no longer need the local darkMode state
+  // const [darkMode, setDarkMode] = useState(false);
+  // const toggleDarkMode = () => setDarkMode(!darkMode);
 
   return (
-    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen transition-colors`}>
-      <div className="flex flex-col md:flex-row">
-        <main className="flex-1 p-6">
-          <header className="flex items-center justify-between mb-6">
-            <div className="flex gap-4">
-              <button className={`text-2xl font-bold ${activeTab === 'editor' ? 'text-blue-600 underline' : ''}`} onClick={() => setActiveTab('editor')}>
-                ✨ Hexakin Editor
-              </button>
-              <button className={`text-2xl font-bold ${activeTab === 'draft' ? 'text-blue-600 underline' : ''}`} onClick={() => setActiveTab('draft')}>
-                ✍️ Draft Studio
-              </button>
+    // The theme class is now dynamically applied to the root div
+    <div className={theme}>
+      <div className="bg-background text-foreground min-h-screen transition-colors">
+        <div className="flex flex-col md:flex-row">
+          <main className="flex-1 p-6">
+            <header className="flex items-center justify-between mb-6">
+              <div className="flex gap-4">
+                <button className={`text-2xl font-bold ${activeTab === 'editor' ? 'text-primary underline' : ''}`} onClick={() => setActiveTab('editor')}>
+                  ✨ Hexakin Editor
+                </button>
+                <button className={`text-2xl font-bold ${activeTab === 'draft' ? 'text-primary underline' : ''}`} onClick={() => setActiveTab('draft')}>
+                  ✍️ Draft Studio
+                </button>
+              </div>
+              
+              {/* --- NEW: Theme Switcher Dropdown --- */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="theme-select" className="text-sm font-medium">Theme</label>
+                <select
+                  id="theme-select"
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value as Theme)}
+                  className="border border-border bg-card text-card-foreground px-2 py-1 rounded-md text-sm"
+                >
+                  <option value="theme-dark">Dark</option>
+                  <option value="theme-light">Light</option>
+                  <option value="theme-rose">Rose</option>
+                </select>
+              </div>
+
+            </header>
+            
+            <div>
+              {activeTab === 'editor' ? <HexakinEditor /> : <LongformEditor />}
             </div>
-            <button onClick={toggleDarkMode} className="border px-3 py-1 rounded">
-              {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-            </button>
-          </header>
+          </main>
           
-          <div>
-            {/* These components no longer need any props passed to them.
-                They will get all their data from the AppContext. */}
-            {activeTab === 'editor' ? <HexakinEditor /> : <LongformEditor />}
-          </div>
-        </main>
-        
-        <aside className="w-full md:w-[320px] border-l border-gray-300 dark:border-gray-800">
-          <ChatSidebar />
-        </aside>
+          <aside className="w-full md:w-[320px] border-l border-border">
+            <ChatSidebar />
+          </aside>
+        </div>
       </div>
     </div>
   );
