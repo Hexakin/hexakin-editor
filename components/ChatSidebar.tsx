@@ -7,13 +7,15 @@ export default function ChatSidebar() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
+  // NEW: Track collapsed state by message index
+  const [collapsedMap, setCollapsedMap] = useState<{ [key: number]: boolean }>({});
+
   const handleSend = async () => {
     if (!message.trim()) return;
     await sendMessage(message);
     setMessage("");
   };
 
-  // Register HexakinChatInject for external system messages
   useEffect(() => {
     if (typeof window !== "undefined") {
       (window as any).HexakinChatInject = (content: string) => {
@@ -22,15 +24,11 @@ export default function ChatSidebar() {
     }
   }, [sendMessage]);
 
-  // Auto-scroll to bottom on new message
   useEffect(() => {
     const el = containerRef.current;
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  // Show "scroll to latest" button when not at bottom
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
@@ -63,9 +61,15 @@ export default function ChatSidebar() {
       >
         {messages.map((msg, idx) => {
           const isUser = msg.role === "user";
-          const time = formatTimestamp(new Date());
           const isLong = msg.content.length > 300;
-          const [collapsed, setCollapsed] = useState(isLong);
+          const collapsed = collapsedMap[idx] ?? isLong;
+
+          const toggleCollapse = () => {
+            setCollapsedMap((prev) => ({
+              ...prev,
+              [idx]: !collapsed,
+            }));
+          };
 
           return (
             <div
@@ -85,22 +89,26 @@ export default function ChatSidebar() {
               </div>
 
               {isLong ? (
-                <div>
+                <>
                   <button
                     className="text-xs text-blue-600 underline mb-1"
-                    onClick={() => setCollapsed(!collapsed)}
+                    onClick={toggleCollapse}
                   >
                     {collapsed ? "Show full message" : "Hide"}
                   </button>
-                  {!collapsed && <div className="whitespace-pre-wrap">{msg.content}</div>}
-                </div>
+                  {!collapsed && (
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  )}
+                </>
               ) : (
                 <div className="whitespace-pre-wrap">{msg.content}</div>
               )}
 
-              <div className="text-[10px] text-gray-500 mt-1">{time}</div>
+              <div className="text-[10px] text-gray-500 mt-1">
+                {formatTimestamp(new Date())}
+              </div>
 
-              {msg.role !== "user" && (
+              {!isUser && (
                 <button
                   onClick={() => copyToClipboard(msg.content)}
                   className="absolute top-2 right-2 text-xs text-gray-400 hover:text-black"
