@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import FileImporter from './FileImporter';
+import DraftSummary from './DraftSummary'; // Import the new component
 
 interface Chapter {
   id: string;
@@ -16,6 +17,7 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
   const [activeId, setActiveId] = useState<string>("");
   const [selection, setSelection] = useState("");
   const [showImporter, setShowImporter] = useState(false);
+  const [showSummary, setShowSummary] = useState(false); // State for the summary modal
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
   // Load from localStorage on mount
@@ -76,14 +78,13 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
   
   const activeChapter = chapters.find((ch) => ch.id === activeId);
 
-  // --- NEW --- Handler to export only the currently active chapter
   const handleExportChapter = () => {
     if (!activeChapter) return;
     const blob = new Blob([activeChapter.content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${activeChapter.title}.txt`; // Use the chapter title for the filename
+    a.download = `${activeChapter.title}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -102,17 +103,20 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
   return (
     <>
       {showImporter && <FileImporter onFileParsed={handleFileParsed} onClose={() => setShowImporter(false)} />}
+      {showSummary && <DraftSummary chapters={chapters} onClose={() => setShowSummary(false)} />}
       
       <div className="p-6">
         <header className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">📘 Draft Mode</h1>
-          <div>
-            <button onClick={() => setShowImporter(true)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowImporter(true)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm">
               📥 Import
             </button>
-            {/* --- NEW --- Button to export the active chapter */}
+            <button onClick={() => setShowSummary(true)} className="bg-purple-600 text-white px-3 py-1 rounded text-sm">
+              📊 Summary
+            </button>
             {activeChapter && (
-              <button onClick={handleExportChapter} className="bg-teal-600 text-white px-3 py-1 rounded text-sm mr-2">
+              <button onClick={handleExportChapter} className="bg-teal-600 text-white px-3 py-1 rounded text-sm">
                 📤 Export Chapter
               </button>
             )}
