@@ -3,19 +3,19 @@ import { OpenAI } from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// --- NEW: Helper function to format the context object into a readable string ---
+// --- Helper function to format the context object into a readable string ---
 const formatContext = (context: any): string => {
   if (!context) return "No additional context provided.";
 
   const { hexakinState, activeChapter } = context;
-  let contextString = "--- CURRENT CONTEXT ---\n\n";
+  let contextString = "--- START OF CONTEXT ---\n\n";
 
   // 1. Add Hexakin Editor context if available
   if (hexakinState && hexakinState.inputText) {
-    contextString += "HEXAKIN EDITOR:\n";
-    contextString += `- Input Text: "${hexakinState.inputText.substring(0, 150)}..."\n`;
+    contextString += "## HEXAKIN EDITOR DATA:\n";
+    contextString += `- Input Text: "${hexakinState.inputText.substring(0, 200)}..."\n`;
     if (hexakinState.editedText) {
-      contextString += `- Edited Output: "${hexakinState.editedText.substring(0, 150)}..."\n`;
+      contextString += `- Edited Output: "${hexakinState.editedText.substring(0, 200)}..."\n`;
     }
     contextString += `- Purpose: ${hexakinState.purpose}\n`;
     contextString += `- Style: ${hexakinState.style}\n\n`;
@@ -23,13 +23,13 @@ const formatContext = (context: any): string => {
 
   // 2. Add Draft Studio context if a chapter is active
   if (activeChapter) {
-    contextString += "DRAFT STUDIO:\n";
+    contextString += "## DRAFT STUDIO DATA:\n";
     contextString += `- Active Chapter Title: "${activeChapter.title}"\n`;
-    // FIX: Corrected the typo from "active-chapter" to "activeChapter"
-    contextString += `- Chapter Content: "${activeChapter.content.substring(0, 300)}..."\n\n`;
+    // THE FIX: Increased the character limit significantly to provide more context.
+    contextString += `- Active Chapter Content (first 3000 chars): "${activeChapter.content.substring(0, 3000)}..."\n\n`;
   }
   
-  contextString += "-----------------------\n\n";
+  contextString += "--- END OF CONTEXT ---\n\n";
   return contextString;
 };
 
@@ -40,7 +40,7 @@ const PROMPTS = {
   // The chat prompt is now built dynamically
 };
 
-// FIX: Define a broader type for the system message object
+// Define a broader type for the system message object
 type SystemMessage = {
     readonly role: "system";
     readonly content: string;
@@ -60,11 +60,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let promptContent = "";
     const systemMessages = {
-      chat: { role: "system", content: "You are an insightful and context-aware writing assistant. Use the provided context to give the most relevant and helpful answers possible." },
+      chat: { role: "system", content: "You are an insightful and context-aware writing assistant. Use the provided context to give the most relevant and helpful answers possible. Address the user directly." },
       default: { role: "system", content: "You are an expert writing editor." },
     } as const;
     
-    // FIX: Apply the broader SystemMessage type to the variable
     let systemMessage: SystemMessage = systemMessages.default;
 
     switch (action) {
@@ -78,9 +77,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         promptContent = PROMPTS.tone(payload.text, payload.targetTone);
         break;
       case 'chat':
-        // NEW: Build the context-aware prompt for the chat
         const contextText = formatContext(payload.context);
-        promptContent = `${contextText}User's question: "${payload.message}"`;
+        // THE FIX: Refined the prompt structure for better clarity for the AI.
+        promptContent = `Given the following context about what the user is working on, please answer their question.\n\n${contextText}User's Question: "${payload.message}"`;
         systemMessage = systemMessages.chat;
         break;
       default:
