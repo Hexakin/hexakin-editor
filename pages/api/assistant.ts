@@ -25,7 +25,8 @@ const formatContext = (context: any): string => {
   if (activeChapter) {
     contextString += "DRAFT STUDIO:\n";
     contextString += `- Active Chapter Title: "${activeChapter.title}"\n`;
-    contextString += `- Chapter Content: "${active-chapter.content.substring(0, 300)}..."\n\n`;
+    // FIX: Corrected the typo from "active-chapter" to "activeChapter"
+    contextString += `- Chapter Content: "${activeChapter.content.substring(0, 300)}..."\n\n`;
   }
   
   contextString += "-----------------------\n\n";
@@ -37,6 +38,12 @@ const PROMPTS = {
   echo: (text: string) => `You are a literary pattern analyst... [Your echo prompt here]`,
   tone: (text: string, targetTone?: string) => `Analyze the text for tone... [Your tone prompt here]`,
   // The chat prompt is now built dynamically
+};
+
+// FIX: Define a broader type for the system message object
+type SystemMessage = {
+    readonly role: "system";
+    readonly content: string;
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -56,7 +63,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       chat: { role: "system", content: "You are an insightful and context-aware writing assistant. Use the provided context to give the most relevant and helpful answers possible." },
       default: { role: "system", content: "You are an expert writing editor." },
     } as const;
-    let systemMessage = systemMessages.default;
+    
+    // FIX: Apply the broader SystemMessage type to the variable
+    let systemMessage: SystemMessage = systemMessages.default;
 
     switch (action) {
       case 'critique':
