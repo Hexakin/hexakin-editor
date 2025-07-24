@@ -1,10 +1,14 @@
-/* Add this to the top of your styles/globals.css file */
+/*
+  This is the complete and corrected globals.css file.
+  It contains only the necessary Tailwind directives and our theme definitions.
+*/
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* We define our color variables here. 
-  Each theme is a class that overrides these variables.
+/* The :root selector defines the default theme variables.
+  We are using the dark theme as the default.
 */
 :root {
   --background: 240 10% 3.9%;
@@ -26,8 +30,12 @@
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 217.2 91.2% 59.8%;
+  --radius: 0.5rem;
 }
 
+/* The .theme-light class overrides the :root variables
+  to apply the light color palette.
+*/
 .theme-light {
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;
@@ -50,6 +58,8 @@
   --ring: 240 10% 3.9%;
 }
 
+/* The .theme-rose class provides a third, distinct color palette.
+*/
 .theme-rose {
   --background: 346.8 83.3% 23.5%;
   --foreground: 355.7 100% 97.3%;
@@ -70,31 +80,4 @@
   --border: 336.8 70.5% 35.1%;
   --input: 336.8 70.5% 35.1%;
   --ring: 346.8 77.2% 49.8%;
-}
-
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
