@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import ChatSidebar from "../components/ChatSidebar";
-import HexakinEditor from "../components/HexakinEditor";
-import LongformEditor from "../components/LongformEditor";
-import { useAppContext, Theme } from '../context/AppContext';
+import ChatSidebar from "@/components/ChatSidebar";
+import HexakinEditor from "@/components/HexakinEditor";
+import LongformEditor from "@/components/LongformEditor";
+import { useAppContext, Theme } from '@/context/AppContext';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'editor' | 'draft'>('editor');
