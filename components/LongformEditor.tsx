@@ -1,20 +1,43 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import FileImporter from './FileImporter';
 import DraftSummary from './DraftSummary';
-import { useAppContext } from '../context/AppContext'; // Import our new context hook
+import { useAppContext } from '../context/AppContext';
 
 export default function LongformEditor() {
-  // Get all the state and functions from the global context
-  const { longformState, setLongformState, activeChapter } = useAppContext();
+  const { 
+    longformState, 
+    setLongformState, 
+    activeChapter,
+    textToInject,      // <-- NEW: Get the text to inject from context
+    clearInjectedText  // <-- NEW: Get the function to clear it once done
+  } = useAppContext();
   const { chapters, activeChapterId } = longformState;
 
-  // These states can remain local to this component as they don't need to be shared
   const [selection, setSelection] = useState("");
   const [showImporter, setShowImporter] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
-  // --- All handler functions now update the global context state ---
+  // --- NEW: Effect to handle injection ---
+  // This useEffect listens for when `textToInject` changes.
+  useEffect(() => {
+    if (textToInject && editorRef.current && activeChapter) {
+      const { selectionStart, selectionEnd } = editorRef.current;
+      const currentContent = activeChapter.content;
+
+      // Insert the text at the current cursor position (or replace selected text)
+      const newContent = 
+        currentContent.slice(0, selectionStart) + 
+        textToInject + 
+        currentContent.slice(selectionEnd);
+
+      // Update the global state with the new content
+      handleContentChange(activeChapter.id, newContent);
+      
+      // Important: Clear the injection text from the context so it doesn't happen again
+      clearInjectedText();
+    }
+  }, [textToInject]); // This effect runs only when textToInject changes
 
   const setActiveId = (id: string) => {
     setLongformState(prevState => ({ ...prevState, activeChapterId: id }));
@@ -69,8 +92,7 @@ export default function LongformEditor() {
   };
 
   const handleInjectToEditor = () => {
-    // This function will be implemented in a later step when we update HexakinEditor
-    // For now, we'll just log it.
+    // This function will be implemented when we update HexakinEditor to use context
     if (activeChapter) {
         console.log("Injecting to editor:", selection, activeChapter.id);
     }

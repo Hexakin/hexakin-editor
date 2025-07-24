@@ -9,7 +9,6 @@ interface HexakinEditorState {
   purpose: string;
   style: string;
   editorType: string;
-  // We'll add more state here as we refactor
 }
 
 // 2. Data from the Longform Editor (Draft Studio)
@@ -26,29 +25,26 @@ interface LongformEditorState {
 
 // 3. Combine everything into a single "Context" shape
 interface IAppContext {
-  // Hexakin Editor state and a function to update it
   hexakinState: HexakinEditorState;
   setHexakinState: React.Dispatch<React.SetStateAction<HexakinEditorState>>;
 
-  // Longform Editor state and a function to update it
   longformState: LongformEditorState;
   setLongformState: React.Dispatch<React.SetStateAction<LongformEditorState>>;
   
-  // A helper to easily get the currently active chapter object
   activeChapter: Chapter | undefined;
+
+  // --- NEW: State and function for injecting text from the chat ---
+  textToInject: string | null;
+  handleInjectText: (text: string) => void;
+  clearInjectedText: () => void;
 }
 
 // --- Create the Context ---
-// This is the actual context object that components will use.
 const AppContext = createContext<IAppContext | undefined>(undefined);
 
 
 // --- Create the Provider Component ---
-// This special component will hold all the state logic and "provide" it
-// to all the child components wrapped inside it.
 export function AppProvider({ children }: { children: ReactNode }) {
-  // All the state that was previously scattered across different components
-  // will now live here, in one central place.
   const [hexakinState, setHexakinState] = useState<HexakinEditorState>({
     inputText: '',
     editedText: '',
@@ -61,8 +57,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     chapters: [],
     activeChapterId: null,
   });
+  
+  // --- NEW: State for injection ---
+  const [textToInject, setTextToInject] = useState<string | null>(null);
 
-  // We keep the logic for loading and saving chapters from localStorage here.
+  // Load chapters from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem("hexakin_chapters");
@@ -75,38 +74,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
         console.error("Failed to parse chapters from localStorage", error);
-        localStorage.removeItem("hexakin_chapters"); // Clear corrupted data
+        localStorage.removeItem("hexakin_chapters");
     }
   }, []);
 
+  // Save chapters to localStorage
   useEffect(() => {
     if (longformState.chapters.length > 0) {
       localStorage.setItem("hexakin_chapters", JSON.stringify(longformState.chapters));
     }
   }, [longformState.chapters]);
 
-  // This is a "derived" piece of state - it calculates the active chapter
-  // based on the activeChapterId.
   const activeChapter = longformState.chapters.find(
     (ch) => ch.id === longformState.activeChapterId
   );
+  
+  // --- NEW: Injection handler functions ---
+  const handleInjectText = (text: string) => {
+    setTextToInject(text);
+  };
 
-  // We bundle up all the state and functions into a single "value" object
-  // to pass down to the rest of the app.
+  const clearInjectedText = () => {
+    setTextToInject(null);
+  };
+
   const value = {
     hexakinState,
     setHexakinState,
     longformState,
     setLongformState,
     activeChapter,
+    textToInject,
+    handleInjectText,
+    clearInjectedText,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
 // --- Create a Custom Hook for easy access ---
-// Instead of components having to import `useContext` and `AppContext` every time,
-// they can just use this simple hook to get access to all the shared data.
 export function useAppContext() {
   const context = useContext(AppContext);
   if (context === undefined) {

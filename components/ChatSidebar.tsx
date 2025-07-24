@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useAssistant } from "../hooks/useAssistant";
-import { useAppContext } from '../context/AppContext'; // Import the context hook
+import { useAppContext } from '../context/AppContext';
 
 export default function ChatSidebar() {
   const [message, setMessage] = useState("");
   const { messages, sendMessage, loading } = useAssistant();
-  
-  // Get the entire app's context
   const appContext = useAppContext();
+  
+  // Get the handleInjectText function from our global context
+  const { handleInjectText } = useAppContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -15,7 +16,6 @@ export default function ChatSidebar() {
 
   const handleSend = async () => {
     if (!message.trim()) return;
-    // Pass the user's message AND the entire app context to the hook
     await sendMessage(message, appContext);
     setMessage("");
   };
@@ -23,7 +23,6 @@ export default function ChatSidebar() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       (window as any).HexakinChatInject = (content: string) => {
-        // Injected messages don't need context
         sendMessage(content, null, "assistant");
       };
     }
@@ -83,14 +82,35 @@ export default function ChatSidebar() {
                 isUser ? "bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100" : "bg-gray-100 dark:bg-gray-700 text-black dark:text-white"
               }`}
             >
-              <div className="text-xs font-semibold mb-1">
-                {msg.role === "user"
-                  ? "💬 You"
-                  : msg.content.startsWith("💡")
-                  ? "💡 Critique"
-                  : msg.content.startsWith("🎯")
-                  ? "🎯 Tone Insight"
-                  : "🤖 Assistant"}
+              <div className="text-xs font-semibold mb-1 flex justify-between items-center">
+                <span>
+                  {msg.role === "user"
+                    ? "💬 You"
+                    : msg.content.startsWith("💡")
+                    ? "💡 Critique"
+                    : msg.content.startsWith("🎯")
+                    ? "🎯 Tone Insight"
+                    : "🤖 Assistant"}
+                </span>
+                {/* --- NEW: Inject Button for assistant messages --- */}
+                {!isUser && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleInjectText(msg.content)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                      title="Inject this text into the active editor"
+                    >
+                      ✍️ Inject
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(msg.content)}
+                      className="text-xs text-gray-400 hover:text-black"
+                      title="Copy to clipboard"
+                    >
+                      📋
+                    </button>
+                  </div>
+                )}
               </div>
 
               {isLong ? (
@@ -112,16 +132,6 @@ export default function ChatSidebar() {
               <div className="text-[10px] text-gray-500 mt-1">
                 {formatTimestamp(new Date())}
               </div>
-
-              {!isUser && (
-                <button
-                  onClick={() => copyToClipboard(msg.content)}
-                  className="absolute top-2 right-2 text-xs text-gray-400 hover:text-black"
-                  title="Copy to clipboard"
-                >
-                  📋
-                </button>
-              )}
             </div>
           );
         })}
