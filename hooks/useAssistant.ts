@@ -1,56 +1,47 @@
-
 import { useState } from "react";
 
-interface ChatMessage {
+interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
 export function useAssistant() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const sendMessage = async (content: string) => {
-    const newMessages: ChatMessage[] = [
-      ...messages,
-      { role: "user", content },
-    ];
-    setMessages(newMessages);
+  const sendMessage = async (text: string) => {
     setLoading(true);
+    const updatedMessages = [...messages, { role: "user", content: text }];
+    setMessages(updatedMessages);
 
     try {
-      const response = await fetch("/api/assistant", {
+      const res = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: content }),
+        body: JSON.stringify({ text }),
       });
 
-      const data = await response.json();
-      if (response.ok && data.result) {
+      const data = await res.json();
+      if (res.ok && data.result) {
         setMessages([
-          ...newMessages,
+          ...updatedMessages,
           { role: "assistant", content: data.result },
         ]);
       } else {
         setMessages([
-          ...newMessages,
-          { role: "assistant", content: "⚠️ Error: No response from assistant." },
+          ...updatedMessages,
+          { role: "assistant", content: "Something went wrong." },
         ]);
       }
     } catch (err) {
-      console.error("Chat error:", err);
+      console.error("Assistant error:", err);
       setMessages([
-        ...newMessages,
-        { role: "assistant", content: "⚠️ Network error." },
+        ...updatedMessages,
+        { role: "assistant", content: "Error talking to assistant." },
       ]);
     }
-
     setLoading(false);
   };
 
-  const injectMessage = (role: "user" | "assistant", content: string) => {
-    setMessages((prev) => [...prev, { role, content }]);
-  };
-
-  return { messages, sendMessage, injectMessage, loading };
+  return { messages, sendMessage, loading };
 }
