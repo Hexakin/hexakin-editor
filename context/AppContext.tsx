@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-// --- Define the shape of all the data we want to share ---
+// --- NEW: Export the Theme type so other files can use it ---
+export type Theme = "theme-dark" | "theme-light" | "theme-rose";
 
-// 1. Data from the Hexakin Editor
 interface HexakinEditorState {
   inputText: string;
   editedText: string;
@@ -11,7 +11,6 @@ interface HexakinEditorState {
   editorType: string;
 }
 
-// 2. Data from the Longform Editor (Draft Studio)
 interface Chapter {
   id: string;
   title: string;
@@ -23,27 +22,22 @@ interface LongformEditorState {
   activeChapterId: string | null;
 }
 
-// 3. Combine everything into a single "Context" shape
 interface IAppContext {
   hexakinState: HexakinEditorState;
   setHexakinState: React.Dispatch<React.SetStateAction<HexakinEditorState>>;
-
   longformState: LongformEditorState;
   setLongformState: React.Dispatch<React.SetStateAction<LongformEditorState>>;
-  
   activeChapter: Chapter | undefined;
-
-  // --- NEW: State and function for injecting text from the chat ---
   textToInject: string | null;
   handleInjectText: (text: string) => void;
   clearInjectedText: () => void;
+  // --- NEW: Add the theme properties to the interface ---
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
 }
 
-// --- Create the Context ---
 const AppContext = createContext<IAppContext | undefined>(undefined);
 
-
-// --- Create the Provider Component ---
 export function AppProvider({ children }: { children: ReactNode }) {
   const [hexakinState, setHexakinState] = useState<HexakinEditorState>({
     inputText: '',
@@ -58,8 +52,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     activeChapterId: null,
   });
   
-  // --- NEW: State for injection ---
   const [textToInject, setTextToInject] = useState<string | null>(null);
+  
+  // --- NEW: Theme state management ---
+  const [theme, setTheme] = useState<Theme>('theme-dark');
 
   // Load chapters from localStorage
   useEffect(() => {
@@ -89,7 +85,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (ch) => ch.id === longformState.activeChapterId
   );
   
-  // --- NEW: Injection handler functions ---
   const handleInjectText = (text: string) => {
     setTextToInject(text);
   };
@@ -107,12 +102,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     textToInject,
     handleInjectText,
     clearInjectedText,
+    theme,
+    setTheme,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
-// --- Create a Custom Hook for easy access ---
 export function useAppContext() {
   const context = useContext(AppContext);
   if (context === undefined) {
