@@ -11,7 +11,7 @@ export function useAssistant() {
 
   const sendMessage = async (text: string) => {
     setLoading(true);
-    const updatedMessages = [...messages, { role: "user", content: text }];
+    const updatedMessages = [...messages, { role: "user" as const, content: text }];
     setMessages(updatedMessages);
 
     try {
