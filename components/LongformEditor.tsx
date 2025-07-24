@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import FileImporter from './FileImporter'; // Import the new component
 
 interface Chapter {
   id: string;
@@ -14,6 +15,7 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [selection, setSelection] = useState("");
+  const [showImporter, setShowImporter] = useState(false); // State to control the importer modal
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
   // Load from localStorage on mount
@@ -33,12 +35,19 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
     }
   }, [chapters]);
 
-  const handleAddChapter = () => {
+  const handleAddChapter = (title = `Chapter ${chapters.length + 1}`, content = "") => {
     const id = Date.now().toString();
-    const newChapter = { id, title: `Chapter ${chapters.length + 1}`, content: "" };
+    const newChapter = { id, title, content };
     const updated = [...chapters, newChapter];
     setChapters(updated);
     setActiveId(id);
+    return updated;
+  };
+  
+  // Handler for when a file has been parsed by the importer
+  const handleFileParsed = (content: string, fileName: string) => {
+      const chapterTitle = fileName.replace(/\.[^/.]+$/, ""); // Remove file extension for title
+      handleAddChapter(chapterTitle, content);
   };
 
   const handleContentChange = (id: string, newContent: string) => {
@@ -66,45 +75,68 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
       setSelection(selectedText.trim());
     }
   };
+  
+  const handleExportAll = () => {
+    const fullText = chapters.map((ch) => `# ${ch.title}\n\n${ch.content}`).join("\n\n---\n\n");
+    const blob = new Blob([fullText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "manuscript.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const activeChapter = chapters.find((ch) => ch.id === activeId);
 
   return (
-    <div className="p-6">
-      <header className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">📘 Draft Mode</h1>
-      </header>
-
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        {chapters.map((ch) => (
-          <div key={ch.id} className={`px-3 py-1 rounded cursor-pointer ${ch.id === activeId ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-700"}`} onClick={() => setActiveId(ch.id)}>
-            <input className="bg-transparent outline-none text-sm font-semibold" value={ch.title} onChange={(e) => handleRename(ch.id, e.target.value)} />
-            <button onClick={(e) => { e.stopPropagation(); handleDelete(ch.id); }} className="ml-1 text-xs text-red-500" title="Delete chapter">✕</button>
-          </div>
-        ))}
-        <button onClick={handleAddChapter} className="px-3 py-1 bg-green-600 text-white rounded text-sm">+ Add Chapter</button>
-      </div>
-
-      {activeChapter && (
-        <div className="relative">
-          <textarea
-            ref={editorRef}
-            className="w-full h-[60vh] border px-3 py-2 rounded text-black bg-white dark:bg-gray-800 dark:text-white"
-            value={activeChapter.content}
-            onChange={(e) => handleContentChange(activeChapter.id, e.target.value)}
-            onSelect={handleSelect}
-            placeholder="Start writing..."
-          />
-          {selection && (
-            <button
-              onClick={() => onInjectToEditor(selection, activeChapter.id)}
-              className="absolute bottom-4 right-4 bg-fuchsia-600 text-white px-4 py-2 rounded shadow-lg hover:bg-fuchsia-700"
-            >
-              ✨ Send to Editor
+    <>
+      {showImporter && <FileImporter onFileParsed={handleFileParsed} onClose={() => setShowImporter(false)} />}
+      
+      <div className="p-6">
+        <header className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">📘 Draft Mode</h1>
+          <div>
+            <button onClick={() => setShowImporter(true)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">
+              📥 Import
             </button>
-          )}
+            <button onClick={handleExportAll} className="bg-gray-700 text-white px-3 py-1 rounded text-sm">
+              📤 Export Full Draft
+            </button>
+          </div>
+        </header>
+
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {chapters.map((ch) => (
+            <div key={ch.id} className={`px-3 py-1 rounded cursor-pointer ${ch.id === activeId ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-700"}`} onClick={() => setActiveId(ch.id)}>
+              <input className="bg-transparent outline-none text-sm font-semibold" value={ch.title} onChange={(e) => handleRename(ch.id, e.target.value)} />
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(ch.id); }} className="ml-1 text-xs text-red-500" title="Delete chapter">✕</button>
+            </div>
+          ))}
+          <button onClick={() => handleAddChapter()} className="px-3 py-1 bg-green-600 text-white rounded text-sm">+ Add Chapter</button>
         </div>
-      )}
-    </div>
+
+        {activeChapter && (
+          <div className="relative">
+            <textarea
+              ref={editorRef}
+              className="w-full h-[60vh] border px-3 py-2 rounded text-black bg-white dark:bg-gray-800 dark:text-white"
+              value={activeChapter.content}
+              onChange={(e) => handleContentChange(activeChapter.id, e.target.value)}
+              onSelect={handleSelect}
+              placeholder="Start writing..."
+            />
+            {selection && (
+              <button
+                onClick={() => onInjectToEditor(selection, activeChapter.id)}
+                className="absolute bottom-4 right-4 bg-fuchsia-600 text-white px-4 py-2 rounded shadow-lg hover:bg-fuchsia-700"
+              >
+                ✨ Send to Editor
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

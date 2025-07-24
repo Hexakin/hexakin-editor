@@ -11,14 +11,18 @@
   "dependencies": {
     "diff-match-patch": "^1.0.5",
     "lucide-react": "^0.525.0",
+    "mammoth": "^1.9.1",
+    "marked": "^16.1.1",
     "next": "15.4.2",
     "openai": "^5.10.2",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-dropzone": "^14.3.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/diff-match-patch": "^1.0.36",
+    "@types/marked": "^5.0.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
