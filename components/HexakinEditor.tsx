@@ -1,40 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import { Clock } from "lucide-react";
 
-// We no longer need to import the child analyzer components
-// FIX: Changed paths to be relative to the components/ directory
 import VersionHistory from "./VersionHistory";
 import ExportButtons from "./ExportButtons";
 import DiffView from "./DiffView";
-
-// FIX: Changed path to be relative
 import { useApiMutation } from "../hooks/useApiMutation";
 
-// --- Constants and Types ---
-const REFINE_OPTIONS = [
-  "Make it more vivid",
-  "Soften the tone",
-  "Add emotional depth",
-  "Tighten the pacing",
-  "Make it humorous",
-  "Custom",
-];
-
-const TONE_OPTIONS = [
-  "", "Hopeful", "Desperate", "Detached", "Warm", "Clinical",
-  "Ironic", "Introspective", "Playful", "Paranoid", "Authoritative", "Neutral",
-];
-
-interface VersionPair {
-  input: string;
-  output: string;
-  purpose: string;
-  style: string;
-  editorType: string;
+// --- Props Interface ---
+// This tells the component what props to expect from its parent (index.tsx)
+interface HexakinEditorProps {
+  injectedText: string;
+  originChapterId: string | null;
+  onInjectBack: (newText: string) => void;
 }
 
+// --- Constants and Types ---
+const REFINE_OPTIONS = ["Make it more vivid", "Soften the tone", "Add emotional depth", "Tighten the pacing", "Make it humorous", "Custom"];
+const TONE_OPTIONS = ["", "Hopeful", "Desperate", "Detached", "Warm", "Clinical", "Ironic", "Introspective", "Playful", "Paranoid", "Authoritative", "Neutral"];
+interface VersionPair { input: string; output: string; purpose: string; style: string; editorType: string; }
+
 // --- The Component ---
-export default function HexakinEditor() {
+// We now accept the props defined in the interface above
+export default function HexakinEditor({ injectedText, originChapterId, onInjectBack }: HexakinEditorProps) {
   // --- State Management ---
   const [inputText, setInputText] = useState("");
   const [editedText, setEditedText] = useState("");
@@ -47,28 +34,30 @@ export default function HexakinEditor() {
   const [versionHistory, setVersionHistory] = useState<VersionPair[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
-  const [targetTone, setTargetTone] = useState(""); // State for Tone Analyzer
+  const [targetTone, setTargetTone] = useState("");
 
   const outputRef = useRef<HTMLDivElement>(null);
 
   // --- API Hooks ---
   const { mutate: performEdit, loading: editLoading, error: editError } = useApiMutation<{ result: string }>();
   const { mutate: performRefine, loading: refineLoading, error: refineError } = useApiMutation<{ result: string }>();
-  
-  // NEW: API hooks for the analyzer functions
   const { mutate: sendCritique, loading: critiqueLoading, error: critiqueError } = useApiMutation<{ result: string }>();
   const { mutate: sendEcho, loading: echoLoading, error: echoError } = useApiMutation<{ result: string }>();
   const { mutate: sendTone, loading: toneLoading, error: toneError } = useApiMutation<{ result: string }>();
 
-
   // --- Effects ---
+  // This effect listens for injected text from the parent.
+  useEffect(() => {
+    if (injectedText) {
+      setInputText(injectedText);
+      setEditedText(""); // Clear previous output
+    }
+  }, [injectedText]);
+
   useEffect(() => {
     const handleSelection = () => {
-      // FIX: The variable was named `selection` but used as `text`. Corrected to use `selection`.
       const selection = window.getSelection()?.toString().trim();
-      if (selection) {
-        setStoredSelection(selection);
-      }
+      if (selection) setStoredSelection(selection);
     };
     document.addEventListener("mouseup", handleSelection);
     return () => document.removeEventListener("mouseup", handleSelection);
@@ -86,22 +75,6 @@ export default function HexakinEditor() {
     localStorage.setItem("hexakin_versions", JSON.stringify(updated));
   };
 
-  const restoreVersion = (version: VersionPair) => {
-    setInputText(version.input);
-    setEditedText(version.output);
-    setPurpose(version.purpose);
-    setStyle(version.style);
-    setEditorType(version.editorType);
-  };
-
-  const sanitize = (text: string) => text.replace(/^['"]{1,3}/, "").replace(/['"]{1,3}$/, "").trim();
-
-  const safeReplace = (original: string, target: string, replacement: string) => {
-    const index = original.indexOf(target);
-    if (index === -1) return original;
-    return original.slice(0, index) + replacement + original.slice(index + target.length);
-  };
-
   const handleEdit = async () => {
     const body = { input: inputText, purpose, style, editorType };
     const data = await performEdit('/api/edit', body);
@@ -110,7 +83,20 @@ export default function HexakinEditor() {
       updateHistory({ ...body, output: data.result });
     }
   };
-
+  
+  const restoreVersion = (version: VersionPair) => {
+    setInputText(version.input);
+    setEditedText(version.output);
+    setPurpose(version.purpose);
+    setStyle(version.style);
+    setEditorType(version.editorType);
+  };
+  const sanitize = (text: string) => text.replace(/^['"]{1,3}/, "").replace(/['"]{1,3}$/, "").trim();
+  const safeReplace = (original: string, target: string, replacement: string) => {
+    const index = original.indexOf(target);
+    if (index === -1) return original;
+    return original.slice(0, index) + replacement + original.slice(index + target.length);
+  };
   const handleRefine = async () => {
     if (!editedText) return;
     const instruction = selectedRefine === "Custom" ? refinePrompt : selectedRefine || "Refine the text.";
@@ -125,15 +111,12 @@ export default function HexakinEditor() {
       setRefinePrompt("");
     }
   };
-
   const handleClear = () => {
     setInputText("");
     setEditedText("");
     setRefinePrompt("");
     setStoredSelection("");
   };
-
-  // NEW: Handlers for the analyzer functions, calling the single /api/assistant endpoint
   const handleCritique = async () => {
     if (!editedText) return;
     const payload = { action: 'critique', payload: { text: editedText, purpose } };
@@ -142,7 +125,6 @@ export default function HexakinEditor() {
       (window as any).HexakinChatInject("💡 *Critique Result:*\n\n" + data.result);
     }
   };
-
   const handleEcho = async () => {
     if (!inputText) return;
     const payload = { action: 'echo', payload: { text: inputText } };
@@ -151,7 +133,6 @@ export default function HexakinEditor() {
       (window as any).HexakinChatInject("📊 *Echo Analysis Result:*\n\n" + data.result);
     }
   };
-
   const handleTone = async () => {
     if (!inputText) return;
     const payload = { action: 'tone', payload: { text: inputText, targetTone } };
@@ -165,6 +146,20 @@ export default function HexakinEditor() {
   // --- JSX ---
   return (
     <>
+      {/* Button to inject text back into the draft */}
+      {originChapterId && (
+        <div className="mb-4 p-3 bg-fuchsia-100 dark:bg-fuchsia-900 border border-fuchsia-300 rounded-lg">
+          <p className="text-sm font-semibold mb-2">Editing a selection from your draft.</p>
+          <button
+            onClick={() => onInjectBack(editedText)}
+            disabled={!editedText}
+            className="bg-green-600 text-white px-4 py-2 rounded shadow-md hover:bg-green-700 disabled:bg-gray-400"
+          >
+            ↩️ Inject Back to Draft
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
           <label className="block mb-1 font-semibold" title="Why you're editing this text">Purpose</label>
@@ -196,7 +191,6 @@ export default function HexakinEditor() {
           </select>
         </div>
       </div>
-
       <div className="mb-4">
         <label className="block font-semibold mb-1">Input Text</label>
         <textarea
@@ -206,7 +200,6 @@ export default function HexakinEditor() {
           onChange={(e) => setInputText(e.target.value)}
         />
       </div>
-
       <div className="flex gap-2 mb-6">
         <button onClick={handleEdit} disabled={editLoading} className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400">
           {editLoading ? 'Editing...' : 'Submit'}
@@ -215,76 +208,44 @@ export default function HexakinEditor() {
           Clear
         </button>
       </div>
-
       {(editError || refineError) && <p className="text-red-500 mb-4">{editError || refineError}</p>}
-
       <div className="mb-4">
         <label className="block font-semibold mb-1">Edited Output</label>
-        <div
-          ref={outputRef}
-          className="w-full min-h-[100px] border p-2 bg-gray-50 dark:bg-gray-800 rounded whitespace-pre-wrap"
-        >
+        <div ref={outputRef} className="w-full min-h-[100px] border p-2 bg-gray-50 dark:bg-gray-800 rounded whitespace-pre-wrap">
           {editLoading ? "Editing in progress..." : editedText}
           {editedText && (
-            <button
-              onClick={() => setShowDiff(!showDiff)}
-              className="mt-2 text-sm text-blue-600 dark:text-blue-400 underline block"
-            >
+            <button onClick={() => setShowDiff(!showDiff)} className="mt-2 text-sm text-blue-600 dark:text-blue-400 underline block">
               {showDiff ? "Hide Differences" : "Show Differences"}
             </button>
           )}
           {showDiff && <DiffView original={inputText} edited={editedText} />}
         </div>
       </div>
-
       <ExportButtons text={editedText} />
-
-      {/* --- Inline Critique UI (Merged) --- */}
       <div className="my-4">
         <div className="text-sm text-gray-700">
-          <button
-            onClick={handleCritique}
-            className="bg-yellow-100 text-yellow-900 font-semibold px-4 py-2 rounded hover:bg-yellow-200 transition-all disabled:bg-gray-400"
-            disabled={critiqueLoading}
-          >
+          <button onClick={handleCritique} className="bg-yellow-100 text-yellow-900 font-semibold px-4 py-2 rounded hover:bg-yellow-200 transition-all disabled:bg-gray-400" disabled={critiqueLoading}>
             💡 {critiqueLoading ? "Sending..." : "Critique This"}
           </button>
           <div className="text-xs text-gray-500 mt-1">Critique will appear in the assistant chat →</div>
           {critiqueError && <div className="text-red-500 mt-1">{critiqueError}</div>}
         </div>
       </div>
-
-
       <div className="my-4">
         <label className="block font-semibold mb-1">Refine Further</label>
         <div className="flex flex-col md:flex-row gap-2">
-          <select
-            className="border px-2 py-1 rounded bg-white dark:bg-gray-800"
-            value={selectedRefine}
-            onChange={(e) => setSelectedRefine(e.target.value)}
-          >
+          <select className="border px-2 py-1 rounded bg-white dark:bg-gray-800" value={selectedRefine} onChange={(e) => setSelectedRefine(e.target.value)}>
             <option value="">Select refinement type...</option>
             {REFINE_OPTIONS.map((opt) => (<option key={opt}>{opt}</option>))}
           </select>
           {selectedRefine === "Custom" && (
-            <input
-              type="text"
-              placeholder="Enter custom refinement"
-              className="border px-2 py-1 rounded w-full bg-white dark:bg-gray-800"
-              value={refinePrompt}
-              onChange={(e) => setRefinePrompt(e.target.value)}
-            />
+            <input type="text" placeholder="Enter custom refinement" className="border px-2 py-1 rounded w-full bg-white dark:bg-gray-800" value={refinePrompt} onChange={(e) => setRefinePrompt(e.target.value)} />
           )}
-          <button
-            onClick={handleRefine}
-            disabled={refineLoading || (!selectedRefine && !refinePrompt)}
-            className="bg-fuchsia-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          >
+          <button onClick={handleRefine} disabled={refineLoading || (!selectedRefine && !refinePrompt)} className="bg-fuchsia-600 text-white px-4 py-2 rounded disabled:bg-gray-400">
             {refineLoading ? 'Refining...' : 'Refine Output'}
           </button>
         </div>
       </div>
-
       <div className="mt-6">
         <button onClick={() => setShowHistory(!showHistory)} className="text-sm text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1">
           <Clock size={16} /> {showHistory ? "Hide Version History" : "Show Version History"}
@@ -295,38 +256,21 @@ export default function HexakinEditor() {
           </div>
         )}
       </div>
-
       <hr className="my-6 border-gray-200 dark:border-gray-700" />
-      
-      {/* --- Echo Tracker UI (Merged) --- */}
       <div className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Echo / Pattern Tracker</h2>
-        <button
-          onClick={handleEcho}
-          disabled={echoLoading}
-          className="px-4 py-2 bg-indigo-600 text-white rounded disabled:bg-gray-400"
-        >
+        <button onClick={handleEcho} disabled={echoLoading} className="px-4 py-2 bg-indigo-600 text-white rounded disabled:bg-gray-400">
           {echoLoading ? "Analyzing..." : "Send to Assistant"}
         </button>
         {echoError && <p className="text-red-500 mt-2">{echoError}</p>}
       </div>
-
-      {/* --- Tone Analyzer UI (Merged) --- */}
       <div className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Tone / Formality Analysis</h2>
         <label className="block mb-1 text-sm font-medium">Desired Tone (optional)</label>
-        <select
-          value={targetTone}
-          onChange={(e) => setTargetTone(e.target.value)}
-          className="mb-3 w-full md:w-72 border px-2 py-1 rounded bg-white dark:bg-gray-800"
-        >
+        <select value={targetTone} onChange={(e) => setTargetTone(e.target.value)} className="mb-3 w-full md:w-72 border px-2 py-1 rounded bg-white dark:bg-gray-800">
           {TONE_OPTIONS.map((tone) => (<option key={tone} value={tone}>{tone || "-- No Preference --"}</option>))}
         </select>
-        <button
-          onClick={handleTone}
-          disabled={toneLoading}
-          className="px-4 py-2 bg-sky-600 text-white rounded disabled:bg-gray-400"
-        >
+        <button onClick={handleTone} disabled={toneLoading} className="px-4 py-2 bg-sky-600 text-white rounded disabled:bg-gray-400">
           {toneLoading ? "Analyzing..." : "Send to Assistant"}
         </button>
         {toneError && <p className="text-red-500 mt-2">{toneError}</p>}
