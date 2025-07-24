@@ -23,7 +23,7 @@ export default function ChatSidebar() {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b font-semibold text-lg">📣 Assistant</div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 text-sm">
+<div className="flex-1 overflow-y-auto p-4 space-y-2 text-sm max-h-[calc(100vh-120px)] overflow-scroll">
         {messages.map((msg, idx) => (
           <div
             key={idx}
