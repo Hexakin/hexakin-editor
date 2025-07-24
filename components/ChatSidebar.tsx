@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAssistant } from "../hooks/useAssistant";
 
 export default function ChatSidebar() {
@@ -10,6 +10,15 @@ export default function ChatSidebar() {
     await sendMessage(message);
     setMessage("");
   };
+
+  // ✅ This makes injected system messages show up in the chat
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).HexakinChatInject = (content: string) => {
+        sendMessage(content, "assistant");
+      };
+    }
+  }, [sendMessage]);
 
   return (
     <div className="h-full flex flex-col">
