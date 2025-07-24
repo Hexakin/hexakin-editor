@@ -5,31 +5,21 @@ import VersionHistory from "./VersionHistory";
 import ExportButtons from "./ExportButtons";
 import DiffView from "./DiffView";
 import { useApiMutation } from "../hooks/useApiMutation";
-
-// --- Props Interface ---
-// This tells the component what props to expect from its parent (index.tsx)
-interface HexakinEditorProps {
-  injectedText: string;
-  originChapterId: string | null;
-  onInjectBack: (newText: string) => void;
-}
+import { useAppContext } from '../context/AppContext'; // Import our new context hook
 
 // --- Constants and Types ---
 const REFINE_OPTIONS = ["Make it more vivid", "Soften the tone", "Add emotional depth", "Tighten the pacing", "Make it humorous", "Custom"];
 const TONE_OPTIONS = ["", "Hopeful", "Desperate", "Detached", "Warm", "Clinical", "Ironic", "Introspective", "Playful", "Paranoid", "Authoritative", "Neutral"];
 interface VersionPair { input: string; output: string; purpose: string; style: string; editorType: string; }
 
-// --- The Component ---
-// We now accept the props defined in the interface above
-export default function HexakinEditor({ injectedText, originChapterId, onInjectBack }: HexakinEditorProps) {
-  // --- State Management ---
-  const [inputText, setInputText] = useState("");
-  const [editedText, setEditedText] = useState("");
+export default function HexakinEditor() {
+  // --- Get State from Global Context ---
+  const { hexakinState, setHexakinState } = useAppContext();
+  const { inputText, editedText, purpose, style, editorType } = hexakinState;
+
+  // --- Local State (not shared) ---
   const [refinePrompt, setRefinePrompt] = useState("");
   const [selectedRefine, setSelectedRefine] = useState("");
-  const [purpose, setPurpose] = useState("Line Edit");
-  const [style, setStyle] = useState("Default");
-  const [editorType, setEditorType] = useState("Novel Editor");
   const [storedSelection, setStoredSelection] = useState("");
   const [versionHistory, setVersionHistory] = useState<VersionPair[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -46,14 +36,6 @@ export default function HexakinEditor({ injectedText, originChapterId, onInjectB
   const { mutate: sendTone, loading: toneLoading, error: toneError } = useApiMutation<{ result: string }>();
 
   // --- Effects ---
-  // This effect listens for injected text from the parent.
-  useEffect(() => {
-    if (injectedText) {
-      setInputText(injectedText);
-      setEditedText(""); // Clear previous output
-    }
-  }, [injectedText]);
-
   useEffect(() => {
     const handleSelection = () => {
       const selection = window.getSelection()?.toString().trim();
@@ -67,6 +49,13 @@ export default function HexakinEditor({ injectedText, originChapterId, onInjectB
     const saved = localStorage.getItem("hexakin_versions");
     if (saved) setVersionHistory(JSON.parse(saved));
   }, []);
+
+  // --- Handlers that update global context state ---
+  const setInputText = (text: string) => setHexakinState(prev => ({ ...prev, inputText: text }));
+  const setEditedText = (text: string) => setHexakinState(prev => ({ ...prev, editedText: text }));
+  const setPurpose = (p: string) => setHexakinState(prev => ({ ...prev, purpose: p }));
+  const setStyle = (s: string) => setHexakinState(prev => ({ ...prev, style: s }));
+  const setEditorType = (e: string) => setHexakinState(prev => ({ ...prev, editorType: e }));
 
   // --- Logic and Handlers ---
   const updateHistory = (newVersion: VersionPair) => {
@@ -83,40 +72,29 @@ export default function HexakinEditor({ injectedText, originChapterId, onInjectB
       updateHistory({ ...body, output: data.result });
     }
   };
-  
-  const restoreVersion = (version: VersionPair) => {
-    setInputText(version.input);
-    setEditedText(version.output);
-    setPurpose(version.purpose);
-    setStyle(version.style);
-    setEditorType(version.editorType);
-  };
-  const sanitize = (text: string) => text.replace(/^['"]{1,3}/, "").replace(/['"]{1,3}$/, "").trim();
-  const safeReplace = (original: string, target: string, replacement: string) => {
-    const index = original.indexOf(target);
-    if (index === -1) return original;
-    return original.slice(0, index) + replacement + original.slice(index + target.length);
-  };
+
   const handleRefine = async () => {
     if (!editedText) return;
     const instruction = selectedRefine === "Custom" ? refinePrompt : selectedRefine || "Refine the text.";
     const body = { text: editedText, selected: storedSelection || "", instruction };
     const data = await performRefine('/api/refine', body);
     if (data?.result) {
-      const cleanResult = sanitize(data.result);
-      setEditedText(storedSelection && editedText.includes(storedSelection)
-        ? safeReplace(editedText, storedSelection, cleanResult)
-        : cleanResult
-      );
+      const cleanResult = data.result.replace(/^['"]{1,3}/, "").replace(/['"]{1,3}$/, "").trim();
+      const newText = storedSelection && editedText.includes(storedSelection)
+        ? editedText.replace(storedSelection, cleanResult)
+        : cleanResult;
+      setEditedText(newText);
       setRefinePrompt("");
     }
   };
+  
   const handleClear = () => {
     setInputText("");
     setEditedText("");
     setRefinePrompt("");
     setStoredSelection("");
   };
+
   const handleCritique = async () => {
     if (!editedText) return;
     const payload = { action: 'critique', payload: { text: editedText, purpose } };
@@ -125,6 +103,7 @@ export default function HexakinEditor({ injectedText, originChapterId, onInjectB
       (window as any).HexakinChatInject("💡 *Critique Result:*\n\n" + data.result);
     }
   };
+
   const handleEcho = async () => {
     if (!inputText) return;
     const payload = { action: 'echo', payload: { text: inputText } };
@@ -133,6 +112,7 @@ export default function HexakinEditor({ injectedText, originChapterId, onInjectB
       (window as any).HexakinChatInject("📊 *Echo Analysis Result:*\n\n" + data.result);
     }
   };
+
   const handleTone = async () => {
     if (!inputText) return;
     const payload = { action: 'tone', payload: { text: inputText, targetTone } };
@@ -142,24 +122,19 @@ export default function HexakinEditor({ injectedText, originChapterId, onInjectB
       (window as any).HexakinChatInject(label + data.result);
     }
   };
+  
+  const restoreVersion = (version: VersionPair) => {
+    setHexakinState({
+        inputText: version.input,
+        editedText: version.output,
+        purpose: version.purpose,
+        style: version.style,
+        editorType: version.editorType,
+    });
+  };
 
-  // --- JSX ---
   return (
     <>
-      {/* Button to inject text back into the draft */}
-      {originChapterId && (
-        <div className="mb-4 p-3 bg-fuchsia-100 dark:bg-fuchsia-900 border border-fuchsia-300 rounded-lg">
-          <p className="text-sm font-semibold mb-2">Editing a selection from your draft.</p>
-          <button
-            onClick={() => onInjectBack(editedText)}
-            disabled={!editedText}
-            className="bg-green-600 text-white px-4 py-2 rounded shadow-md hover:bg-green-700 disabled:bg-gray-400"
-          >
-            ↩️ Inject Back to Draft
-          </button>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
           <label className="block mb-1 font-semibold" title="Why you're editing this text">Purpose</label>

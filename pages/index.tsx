@@ -3,47 +3,13 @@ import ChatSidebar from "../components/ChatSidebar";
 import HexakinEditor from "../components/HexakinEditor";
 import LongformEditor from "../components/LongformEditor";
 
+// Note how much simpler this file is now.
+// All the complex state for injection has been moved to AppContext.
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'editor' | 'draft'>('editor');
   const [darkMode, setDarkMode] = useState(false);
 
-  // --- Injection State Bridge ---
-  // This state lives in the parent and connects the two editors.
-  const [injectedText, setInjectedText] = useState("");
-  const [originChapterId, setOriginChapterId] = useState<string | null>(null);
-  const [originSelection, setOriginSelection] = useState("");
-
   const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  // --- Injection Handlers ---
-  const handleInjectToEditor = (selection: string, chapterId: string) => {
-    setInjectedText(selection);
-    setOriginSelection(selection); // Keep a copy of the original
-    setOriginChapterId(chapterId);
-    setActiveTab("editor"); // Switch to the editor tab
-  };
-
-  const handleInjectBackToDraft = (newText: string) => {
-    if (!originChapterId) return;
-
-    // Update the chapters in localStorage
-    const raw = localStorage.getItem("hexakin_chapters");
-    if (raw) {
-      const chapters = JSON.parse(raw);
-      const chapterIndex = chapters.findIndex((c: any) => c.id === originChapterId);
-      if (chapterIndex !== -1) {
-        // Replace the original selection with the new, edited text
-        chapters[chapterIndex].content = chapters[chapterIndex].content.replace(originSelection, newText);
-        localStorage.setItem("hexakin_chapters", JSON.stringify(chapters));
-      }
-    }
-
-    // Clear the injection bridge and switch back to the draft tab
-    setInjectedText("");
-    setOriginSelection("");
-    setOriginChapterId(null);
-    setActiveTab("draft");
-  };
 
   return (
     <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen transition-colors`}>
@@ -64,15 +30,9 @@ export default function Home() {
           </header>
           
           <div>
-            {activeTab === 'editor' ? (
-              <HexakinEditor
-                injectedText={injectedText}
-                onInjectBack={handleInjectBackToDraft}
-                originChapterId={originChapterId}
-              />
-            ) : (
-              <LongformEditor onInjectToEditor={handleInjectToEditor} />
-            )}
+            {/* These components no longer need any props passed to them.
+                They will get all their data from the AppContext. */}
+            {activeTab === 'editor' ? <HexakinEditor /> : <LongformEditor />}
           </div>
         </main>
         
