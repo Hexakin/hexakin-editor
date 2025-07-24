@@ -9,39 +9,33 @@ export function useAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const sendMessage = async (text: string) => {
-    setLoading(true);
-    const updatedMessages = [...messages, { role: "user" as const, content: text }];
-    setMessages(updatedMessages);
+  const sendMessage = async (content: string, role: "user" | "assistant" = "user") => {
+    const newMessage: Message = { role, content };
+    setMessages((prev) => [...prev, newMessage]);
 
+    if (role === "assistant") return; // Don't call API if injecting from system
+
+    setLoading(true);
     try {
-      const res = await fetch("/api/assistant", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ message: content }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.result) {
-        setMessages([
-          ...updatedMessages,
-          { role: "assistant", content: data.result },
-        ]);
-      } else {
-        setMessages([
-          ...updatedMessages,
-          { role: "assistant", content: "Something went wrong." },
-        ]);
+      const data = await response.json();
+      if (response.ok && data.result) {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.result }]);
       }
     } catch (err) {
-      console.error("Assistant error:", err);
-      setMessages([
-        ...updatedMessages,
-        { role: "assistant", content: "Error talking to assistant." },
-      ]);
+      console.error("Chat error:", err);
     }
     setLoading(false);
   };
 
-  return { messages, sendMessage, loading };
+  return {
+    messages,
+    sendMessage,
+    loading,
+  };
 }
