@@ -7,6 +7,7 @@ import ChatSidebar from "../components/ChatSidebar";
 import DiffView from "../components/DiffView";
 import EchoTracker from "../components/EchoTracker";
 import ToneAnalyzer from "../components/ToneAnalyzer";
+import InlineCritique from "../components/InlineCritique";
 
 const REFINE_OPTIONS = [
   "Make it more vivid",
@@ -244,7 +245,11 @@ export default function Home() {
         </div>
       </div>
 
-      <ExportButtons text={editedText} />
+<ExportButtons text={editedText} />
+
+<div className="my-4">
+  <InlineCritique text={editedText} />
+</div>
 
       <div className="my-4">
         <label className="block font-semibold mb-1">Refine Further</label>
