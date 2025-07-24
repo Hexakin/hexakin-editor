@@ -8,53 +8,34 @@ interface InlineCritiqueProps {
 
 export default function InlineCritique({ text, purpose }: InlineCritiqueProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleCritique = async () => {
     setLoading(true);
-    setError("");
-
     try {
-      const response = await fetch("/api/critique", {
+      await fetch("/api/chat-assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, purpose }),
+        body: JSON.stringify({
+          role: "user",
+          content: `💡 Critique this revised text for the selected purpose (${purpose}):\n\n"""${text}"""`,
+        }),
       });
-
-      const data = await response.json();
-      if (response.ok && data.result) {
-        window.dispatchEvent(
-          new CustomEvent("push-to-sidebar", {
-            detail: {
-              role: "assistant",
-              content: `💡 *Critique Result:* ${data.result}`,
-            },
-          })
-        );
-      } else {
-        setError("Critique failed.");
-      }
-    } catch (err) {
-      console.error("Critique error:", err);
-      setError("Something went wrong during critique.");
+    } catch (error) {
+      console.error("Failed to send critique to assistant:", error);
     }
-
     setLoading(false);
   };
 
   return (
-    <div className="flex flex-col gap-1 mt-4">
+    <div className="my-4 text-sm text-gray-600 text-center">
       <button
         onClick={handleCritique}
-        disabled={!text.trim() || loading}
-        className="bg-yellow-100 text-yellow-900 px-3 py-2 rounded text-sm font-medium"
+        disabled={loading}
+        className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 font-medium px-4 py-2 rounded transition"
       >
-        💡 Critique This
+        💡 {loading ? "Sending..." : "Critique This"}
       </button>
-      <span className="text-xs text-gray-500 ml-1">
-        Critique will appear in the assistant chat →
-      </span>
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      <div className="text-xs mt-1 text-gray-400">Critique will appear in the assistant chat →</div>
     </div>
   );
 }
