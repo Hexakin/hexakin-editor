@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: "Missing or invalid text." });
   }
 
-  const prompt = \`
+  const prompt = `
 You are a literary critic. Provide constructive, professional feedback on the following text.
 
 First, identify the biggest weakness or area for improvement.
@@ -26,10 +26,10 @@ Second, give 2–3 clear, actionable suggestions for improving that part.
 Avoid general advice; be specific and concise.
 
 TEXT:
-\${text}
+${text}
 
 Respond only with your critique.
-\`;
+`;
 
   try {
     const completion = await openai.chat.completions.create({
