@@ -2,51 +2,40 @@ import { useState, useEffect } from "react";
 import ChatSidebar from "@/components/ChatSidebar";
 import HexakinEditor from "@/components/HexakinEditor";
 import LongformEditor from "@/components/LongformEditor";
-import { useAppContext, Theme } from '@/context/AppContext';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'editor' | 'draft'>('editor');
-  const { theme, setTheme } = useAppContext();
+  const [darkMode, setDarkMode] = useState(true); // Default to dark mode
 
-  // This useEffect will apply the selected theme class to the main <html> tag
-  // ensuring that our CSS variables are available everywhere.
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  // This simple effect toggles the 'dark' class on the main <html> element
   useEffect(() => {
     const root = window.document.documentElement;
-    // Remove any existing theme classes
-    root.classList.remove('theme-light', 'theme-dark', 'theme-rose');
-    // Add the currently selected theme class
-    root.classList.add(theme);
-  }, [theme]);
+    if (darkMode) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   return (
-    // We now use the theme-aware background and foreground colours
-    // from our tailwind.config.js, which are powered by the CSS variables.
-    <div className="bg-background text-foreground min-h-screen transition-colors">
+    // We use a simple bg-white dark:bg-gray-900 pattern here
+    <div className="bg-white dark:bg-gray-900 text-black dark:text-white min-h-screen">
       <div className="flex flex-col md:flex-row">
         <main className="flex-1 p-6">
           <header className="flex items-center justify-between mb-6">
             <div className="flex gap-4">
-              <button className={`text-2xl font-bold ${activeTab === 'editor' ? 'text-primary underline' : 'text-muted-foreground'}`} onClick={() => setActiveTab('editor')}>
+              <button className={`text-2xl font-bold ${activeTab === 'editor' ? 'text-blue-600 dark:text-blue-400 underline' : 'text-gray-400 dark:text-gray-500'}`} onClick={() => setActiveTab('editor')}>
                 ✨ Hexakin Editor
               </button>
-              <button className={`text-2xl font-bold ${activeTab === 'draft' ? 'text-primary underline' : 'text-muted-foreground'}`} onClick={() => setActiveTab('draft')}>
+              <button className={`text-2xl font-bold ${activeTab === 'draft' ? 'text-blue-600 dark:text-blue-400 underline' : 'text-gray-400 dark:text-gray-500'}`} onClick={() => setActiveTab('draft')}>
                 ✍️ Draft Studio
               </button>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <label htmlFor="theme-select" className="text-sm font-medium">Theme</label>
-              <select
-                id="theme-select"
-                value={theme}
-                onChange={(e) => setTheme(e.target.value as Theme)}
-                className="border border-border bg-card text-card-foreground px-2 py-1 rounded-md text-sm"
-              >
-                <option value="theme-dark">Dark</option>
-                <option value="theme-light">Light</option>
-                <option value="theme-rose">Rose</option>
-              </select>
-            </div>
+            <button onClick={toggleDarkMode} className="border border-gray-300 dark:border-gray-600 px-3 py-1 rounded-md text-sm">
+              {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+            </button>
           </header>
           
           <div>
@@ -54,7 +43,7 @@ export default function Home() {
           </div>
         </main>
         
-        <aside className="w-full md:w-[320px] border-l border-border bg-card">
+        <aside className="w-full md:w-[320px] border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <ChatSidebar />
         </aside>
       </div>
