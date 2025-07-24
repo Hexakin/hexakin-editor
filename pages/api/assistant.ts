@@ -3,14 +3,12 @@ import { OpenAI } from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// --- Helper function to format the context object into a readable string ---
 const formatContext = (context: any): string => {
   if (!context) return "No additional context provided.";
 
   const { hexakinState, activeChapter } = context;
   let contextString = "--- START OF CONTEXT ---\n\n";
 
-  // 1. Add Hexakin Editor context if available
   if (hexakinState && hexakinState.inputText) {
     contextString += "## HEXAKIN EDITOR DATA:\n";
     contextString += `- Input Text: "${hexakinState.inputText.substring(0, 200)}..."\n`;
@@ -21,11 +19,9 @@ const formatContext = (context: any): string => {
     contextString += `- Style: ${hexakinState.style}\n\n`;
   }
 
-  // 2. Add Draft Studio context if a chapter is active
   if (activeChapter) {
     contextString += "## DRAFT STUDIO DATA:\n";
     contextString += `- Active Chapter Title: "${activeChapter.title}"\n`;
-    // THE FIX: Increased the character limit significantly to provide more context.
     contextString += `- Active Chapter Content (first 3000 chars): "${activeChapter.content.substring(0, 3000)}..."\n\n`;
   }
   
@@ -34,13 +30,11 @@ const formatContext = (context: any): string => {
 };
 
 const PROMPTS = {
-  critique: (text: string, purpose: string) => `You are a literary critic... [Your critique prompt here]`, // Truncated for brevity
+  critique: (text: string, purpose: string) => `You are a literary critic... [Your critique prompt here]`,
   echo: (text: string) => `You are a literary pattern analyst... [Your echo prompt here]`,
   tone: (text: string, targetTone?: string) => `Analyze the text for tone... [Your tone prompt here]`,
-  // The chat prompt is now built dynamically
 };
 
-// Define a broader type for the system message object
 type SystemMessage = {
     readonly role: "system";
     readonly content: string;
@@ -60,7 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let promptContent = "";
     const systemMessages = {
-      chat: { role: "system", content: "You are an insightful and context-aware writing assistant. Use the provided context to give the most relevant and helpful answers possible. Address the user directly." },
+      // --- NEW: Updated system prompt for chat ---
+      chat: { role: "system", content: "You are a writing assistant. First, provide a brief, friendly conversational opening. Then, if the user is asking for a writing suggestion, provide ONLY the suggested text inside a single markdown code block. Example: 'Of course, here is a suggestion:\\n\\n```\\nThe crimson sun bled across the horizon.\\n```'" },
       default: { role: "system", content: "You are an expert writing editor." },
     } as const;
     
@@ -78,7 +73,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
       case 'chat':
         const contextText = formatContext(payload.context);
-        // THE FIX: Refined the prompt structure for better clarity for the AI.
         promptContent = `Given the following context about what the user is working on, please answer their question.\n\n${contextText}User's Question: "${payload.message}"`;
         systemMessage = systemMessages.chat;
         break;

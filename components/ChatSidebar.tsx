@@ -6,8 +6,6 @@ export default function ChatSidebar() {
   const [message, setMessage] = useState("");
   const { messages, sendMessage, loading } = useAssistant();
   const appContext = useAppContext();
-  
-  // Get the handleInjectText function from our global context
   const { handleInjectText } = useAppContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -18,6 +16,19 @@ export default function ChatSidebar() {
     if (!message.trim()) return;
     await sendMessage(message, appContext);
     setMessage("");
+  };
+
+  // --- NEW: Smarter injection logic ---
+  const handleSmartInject = (content: string) => {
+    // Regex to find text within a markdown code block (```...```)
+    const codeBlockRegex = /```(?:[\w\s]+)?\n([\s\S]*?)```/;
+    const match = content.match(codeBlockRegex);
+
+    // If a code block is found, inject only its content.
+    // Otherwise, inject the entire message as a fallback.
+    const textToInject = match ? match[1].trim() : content;
+    
+    handleInjectText(textToInject);
   };
 
   useEffect(() => {
@@ -92,11 +103,10 @@ export default function ChatSidebar() {
                     ? "🎯 Tone Insight"
                     : "🤖 Assistant"}
                 </span>
-                {/* --- NEW: Inject Button for assistant messages --- */}
                 {!isUser && (
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleInjectText(msg.content)}
+                      onClick={() => handleSmartInject(msg.content)} // Use the new smart handler
                       className="text-xs text-blue-600 hover:underline font-semibold"
                       title="Inject this text into the active editor"
                     >
