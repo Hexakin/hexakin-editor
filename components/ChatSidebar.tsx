@@ -1,25 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { useAssistant } from "../hooks/useAssistant";
+import { useAppContext } from '../context/AppContext'; // Import the context hook
 
 export default function ChatSidebar() {
   const [message, setMessage] = useState("");
   const { messages, sendMessage, loading } = useAssistant();
+  
+  // Get the entire app's context
+  const appContext = useAppContext();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-
-  // NEW: Track collapsed state by message index
   const [collapsedMap, setCollapsedMap] = useState<{ [key: number]: boolean }>({});
 
   const handleSend = async () => {
     if (!message.trim()) return;
-    await sendMessage(message);
+    // Pass the user's message AND the entire app context to the hook
+    await sendMessage(message, appContext);
     setMessage("");
   };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       (window as any).HexakinChatInject = (content: string) => {
-        sendMessage(content, "assistant");
+        // Injected messages don't need context
+        sendMessage(content, null, "assistant");
       };
     }
   }, [sendMessage]);
@@ -75,7 +80,7 @@ export default function ChatSidebar() {
             <div
               key={idx}
               className={`p-3 rounded relative ${
-                isUser ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-black"
+                isUser ? "bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100" : "bg-gray-100 dark:bg-gray-700 text-black dark:text-white"
               }`}
             >
               <div className="text-xs font-semibold mb-1">
@@ -134,9 +139,10 @@ export default function ChatSidebar() {
       <div className="p-2 border-t flex gap-2">
         <input
           type="text"
-          className="flex-1 border px-2 py-1 rounded text-black"
+          className="flex-1 border px-2 py-1 rounded text-black bg-white dark:bg-gray-800 dark:text-white"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Type a message..."
         />
         <button

@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useAppContext } from '../context/AppContext'; // We need the type definition
+
+// Define the shape of the context object that will be passed
+type AppContextType = ReturnType<typeof useAppContext>;
 
 interface Message {
   role: "user" | "assistant";
@@ -9,7 +13,12 @@ export function useAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const sendMessage = async (content: string, role: "user" | "assistant" = "user") => {
+  // The sendMessage function is now updated to accept the context
+  const sendMessage = async (
+    content: string,
+    context: AppContextType | null, // The context can be null for injected messages
+    role: "user" | "assistant" = "user"
+  ) => {
     const newMessage: Message = { role, content };
     setMessages((prev) => [...prev, newMessage]);
 
@@ -22,23 +31,23 @@ export function useAssistant() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "chat",
-          payload: { message: content },
+          payload: { 
+            message: content,
+            // We pass the entire context snapshot in the payload
+            context: context 
+          },
         }),
       });
 
-      // --- THE FIX IS HERE ---
-      // First, check if the response is actually JSON before trying to parse it.
       const contentType = response.headers.get("content-type");
       if (response.ok && contentType && contentType.includes("application/json")) {
         const data = await response.json();
         setMessages((prev) => [...prev, { role: "assistant", content: data.result }]);
       } else {
-        // If it's not JSON, it's likely an HTML error page.
-        const errorText = await response.text(); // Get the error text from the HTML page
-        console.error("API Error Response:", errorText); // Log the full error for debugging
+        const errorText = await response.text();
+        console.error("API Error Response:", errorText);
         setMessages((prev) => [...prev, { role: "assistant", content: `Sorry, the server returned an unexpected error. (Status: ${response.status})` }]);
       }
-
     } catch (err) {
       console.error("Chat fetch error:", err);
       setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I couldn't connect to the server. Please check the connection." }]);

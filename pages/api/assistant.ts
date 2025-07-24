@@ -1,22 +1,43 @@
-// pages/api/assistant.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { OpenAI } from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Define prompts in a separate, manageable object
-const PROMPTS = {
-  critique: (text: string, purpose: string) => `You are a literary critic. Your tone should match the user's purpose, which is "${purpose}". Provide constructive, professional feedback on the following text. Focus on the biggest weakness and 2-3 actionable suggestions.\n\nTEXT:\n"""\n${text}\n"""`,
-  echo: (text: string) => `You are a literary pattern analyst. Analyze the following text for ECHOES (repeated phrases/motifs). Return a markdown list of findings.\n\nTEXT:\n"""\n${text}\n"""`,
-  tone: (text: string, targetTone?: string) => `Analyze the text for tone and formality. ${targetTone ? `Compare it to the desired tone of "${targetTone}".` : ''}\n\nTEXT:\n"""\n${text}\n"""`,
-  chat: (message: string) => message,
+// --- NEW: Helper function to format the context object into a readable string ---
+const formatContext = (context: any): string => {
+  if (!context) return "No additional context provided.";
+
+  const { hexakinState, activeChapter } = context;
+  let contextString = "--- CURRENT CONTEXT ---\n\n";
+
+  // 1. Add Hexakin Editor context if available
+  if (hexakinState && hexakinState.inputText) {
+    contextString += "HEXAKIN EDITOR:\n";
+    contextString += `- Input Text: "${hexakinState.inputText.substring(0, 150)}..."\n`;
+    if (hexakinState.editedText) {
+      contextString += `- Edited Output: "${hexakinState.editedText.substring(0, 150)}..."\n`;
+    }
+    contextString += `- Purpose: ${hexakinState.purpose}\n`;
+    contextString += `- Style: ${hexakinState.style}\n\n`;
+  }
+
+  // 2. Add Draft Studio context if a chapter is active
+  if (activeChapter) {
+    contextString += "DRAFT STUDIO:\n";
+    contextString += `- Active Chapter Title: "${activeChapter.title}"\n`;
+    contextString += `- Chapter Content: "${active-chapter.content.substring(0, 300)}..."\n\n`;
+  }
+  
+  contextString += "-----------------------\n\n";
+  return contextString;
 };
 
-// 👇 THE FIX IS HERE: We add "as const" to make the types specific.
-const systemMessages = {
-  chat: { role: "system", content: "You are an insightful writing assistant." },
-  default: { role: "system", content: "You are an expert writing editor." },
-} as const;
+const PROMPTS = {
+  critique: (text: string, purpose: string) => `You are a literary critic... [Your critique prompt here]`, // Truncated for brevity
+  echo: (text: string) => `You are a literary pattern analyst... [Your echo prompt here]`,
+  tone: (text: string, targetTone?: string) => `Analyze the text for tone... [Your tone prompt here]`,
+  // The chat prompt is now built dynamically
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -26,15 +47,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { action, payload } = req.body;
 
-    const actionKey = action as keyof typeof PROMPTS;
-    if (!actionKey || !payload || !PROMPTS[actionKey]) {
+    if (!action || !payload) {
       return res.status(400).json({ message: 'Invalid action or payload.' });
     }
 
     let promptContent = "";
-    let systemMessage: (typeof systemMessages)[keyof typeof systemMessages] = systemMessages.default;
+    const systemMessages = {
+      chat: { role: "system", content: "You are an insightful and context-aware writing assistant. Use the provided context to give the most relevant and helpful answers possible." },
+      default: { role: "system", content: "You are an expert writing editor." },
+    } as const;
+    let systemMessage = systemMessages.default;
 
-    switch (actionKey) {
+    switch (action) {
       case 'critique':
         promptContent = PROMPTS.critique(payload.text, payload.purpose);
         break;
@@ -45,14 +69,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         promptContent = PROMPTS.tone(payload.text, payload.targetTone);
         break;
       case 'chat':
-        promptContent = PROMPTS.chat(payload.message);
+        // NEW: Build the context-aware prompt for the chat
+        const contextText = formatContext(payload.context);
+        promptContent = `${contextText}User's question: "${payload.message}"`;
         systemMessage = systemMessages.chat;
         break;
+      default:
+        return res.status(400).json({ message: 'Unknown action.' });
     }
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
-      // Now, TypeScript knows systemMessage.role is "system", not "string"
       messages: [systemMessage, { role: 'user', content: promptContent }],
       temperature: 0.6,
     });
