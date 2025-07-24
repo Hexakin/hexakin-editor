@@ -18,16 +18,10 @@ export default function ChatSidebar() {
     setMessage("");
   };
 
-  // --- NEW: Smarter injection logic ---
   const handleSmartInject = (content: string) => {
-    // Regex to find text within a markdown code block (```...```)
     const codeBlockRegex = /```(?:[\w\s]+)?\n([\s\S]*?)```/;
     const match = content.match(codeBlockRegex);
-
-    // If a code block is found, inject only its content.
-    // Otherwise, inject the entire message as a fallback.
     const textToInject = match ? match[1].trim() : content;
-    
     handleInjectText(textToInject);
   };
 
@@ -66,8 +60,8 @@ export default function ChatSidebar() {
   };
 
   return (
-    <div className="h-full flex flex-col relative">
-      <div className="p-4 border-b font-semibold text-lg">📣 Assistant</div>
+    <div className="h-full flex flex-col relative bg-card text-card-foreground">
+      <div className="p-4 border-b border-border font-semibold text-lg">📣 Assistant</div>
 
       <div
         ref={containerRef}
@@ -89,12 +83,12 @@ export default function ChatSidebar() {
           return (
             <div
               key={idx}
-              className={`p-3 rounded relative ${
-                isUser ? "bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100" : "bg-gray-100 dark:bg-gray-700 text-black dark:text-white"
+              className={`p-3 rounded-md relative ${
+                isUser ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
               }`}
             >
               <div className="text-xs font-semibold mb-1 flex justify-between items-center">
-                <span>
+                <span className="text-foreground">
                   {msg.role === "user"
                     ? "💬 You"
                     : msg.content.startsWith("💡")
@@ -106,15 +100,15 @@ export default function ChatSidebar() {
                 {!isUser && (
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleSmartInject(msg.content)} // Use the new smart handler
-                      className="text-xs text-blue-600 hover:underline font-semibold"
+                      onClick={() => handleSmartInject(msg.content)}
+                      className="text-xs text-primary hover:underline font-semibold"
                       title="Inject this text into the active editor"
                     >
                       ✍️ Inject
                     </button>
                     <button
                       onClick={() => copyToClipboard(msg.content)}
-                      className="text-xs text-gray-400 hover:text-black"
+                      className="text-xs text-muted-foreground hover:text-foreground"
                       title="Copy to clipboard"
                     >
                       📋
@@ -126,7 +120,7 @@ export default function ChatSidebar() {
               {isLong ? (
                 <>
                   <button
-                    className="text-xs text-blue-600 underline mb-1"
+                    className="text-xs text-primary underline mb-1"
                     onClick={toggleCollapse}
                   >
                     {collapsed ? "Show full message" : "Hide"}
@@ -139,7 +133,7 @@ export default function ChatSidebar() {
                 <div className="whitespace-pre-wrap">{msg.content}</div>
               )}
 
-              <div className="text-[10px] text-gray-500 mt-1">
+              <div className="text-[10px] text-muted-foreground mt-1">
                 {formatTimestamp(new Date())}
               </div>
             </div>
@@ -150,16 +144,16 @@ export default function ChatSidebar() {
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-16 right-4 bg-blue-600 text-white px-2 py-1 rounded text-xs shadow"
+          className="absolute bottom-16 right-4 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs shadow-lg"
         >
           ↓ Scroll to latest
         </button>
       )}
 
-      <div className="p-2 border-t flex gap-2">
+      <div className="p-2 border-t border-border flex gap-2">
         <input
           type="text"
-          className="flex-1 border px-2 py-1 rounded text-black bg-white dark:bg-gray-800 dark:text-white"
+          className="flex-1 border border-input px-3 py-1.5 rounded-md bg-background text-foreground"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -168,7 +162,7 @@ export default function ChatSidebar() {
         <button
           onClick={handleSend}
           disabled={loading}
-          className="bg-blue-600 text-white px-3 py-1 rounded"
+          className="bg-primary text-primary-foreground font-semibold px-3 py-1 rounded-md shadow hover:bg-primary/90 disabled:opacity-50"
         >
           Send
         </button>

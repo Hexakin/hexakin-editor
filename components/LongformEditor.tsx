@@ -3,13 +3,19 @@ import FileImporter from './FileImporter';
 import DraftSummary from './DraftSummary';
 import { useAppContext } from '../context/AppContext';
 
+interface Chapter {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export default function LongformEditor() {
   const { 
     longformState, 
     setLongformState, 
     activeChapter,
-    textToInject,      // <-- NEW: Get the text to inject from context
-    clearInjectedText  // <-- NEW: Get the function to clear it once done
+    textToInject,
+    clearInjectedText
   } = useAppContext();
   const { chapters, activeChapterId } = longformState;
 
@@ -18,26 +24,18 @@ export default function LongformEditor() {
   const [showSummary, setShowSummary] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
-  // --- NEW: Effect to handle injection ---
-  // This useEffect listens for when `textToInject` changes.
   useEffect(() => {
     if (textToInject && editorRef.current && activeChapter) {
       const { selectionStart, selectionEnd } = editorRef.current;
       const currentContent = activeChapter.content;
-
-      // Insert the text at the current cursor position (or replace selected text)
       const newContent = 
         currentContent.slice(0, selectionStart) + 
         textToInject + 
         currentContent.slice(selectionEnd);
-
-      // Update the global state with the new content
       handleContentChange(activeChapter.id, newContent);
-      
-      // Important: Clear the injection text from the context so it doesn't happen again
       clearInjectedText();
     }
-  }, [textToInject]); // This effect runs only when textToInject changes
+  }, [textToInject, activeChapter, clearInjectedText]);
 
   const setActiveId = (id: string) => {
     setLongformState(prevState => ({ ...prevState, activeChapterId: id }));
@@ -92,7 +90,6 @@ export default function LongformEditor() {
   };
 
   const handleInjectToEditor = () => {
-    // This function will be implemented when we update HexakinEditor to use context
     if (activeChapter) {
         console.log("Injecting to editor:", selection, activeChapter.id);
     }
@@ -125,22 +122,22 @@ export default function LongformEditor() {
       {showImporter && <FileImporter onFileParsed={handleFileParsed} onClose={() => setShowImporter(false)} />}
       {showSummary && <DraftSummary chapters={chapters} onClose={() => setShowSummary(false)} />}
       
-      <div className="p-6">
+      <div className="p-6 bg-card text-card-foreground border border-border rounded-lg">
         <header className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">📘 Draft Mode</h1>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowImporter(true)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm">
+            <button onClick={() => setShowImporter(true)} className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-semibold shadow hover:bg-primary/90">
               📥 Import
             </button>
-            <button onClick={() => setShowSummary(true)} className="bg-purple-600 text-white px-3 py-1 rounded text-sm">
+            <button onClick={() => setShowSummary(true)} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm font-semibold shadow hover:bg-secondary/80">
               📊 Summary
             </button>
             {activeChapter && (
-              <button onClick={handleExportChapter} className="bg-teal-600 text-white px-3 py-1 rounded text-sm">
+              <button onClick={handleExportChapter} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm font-semibold shadow hover:bg-secondary/80">
                 📤 Export Chapter
               </button>
             )}
-            <button onClick={handleExportAll} className="bg-gray-700 text-white px-3 py-1 rounded text-sm">
+            <button onClick={handleExportAll} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm font-semibold shadow hover:bg-secondary/80">
               📤 Export Full Draft
             </button>
           </div>
@@ -148,19 +145,19 @@ export default function LongformEditor() {
 
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {chapters.map((ch) => (
-            <div key={ch.id} className={`px-3 py-1 rounded cursor-pointer ${ch.id === activeChapterId ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-700"}`} onClick={() => setActiveId(ch.id)}>
-              <input className="bg-transparent outline-none text-sm font-semibold" value={ch.title} onChange={(e) => handleRename(ch.id, e.target.value)} />
-              <button onClick={(e) => { e.stopPropagation(); handleDelete(ch.id); }} className="ml-1 text-xs text-red-500" title="Delete chapter">✕</button>
+            <div key={ch.id} className={`px-3 py-1 rounded-md cursor-pointer transition-colors ${ch.id === activeChapterId ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`} onClick={() => setActiveId(ch.id)}>
+              <input className="bg-transparent outline-none text-sm font-semibold w-24" value={ch.title} onChange={(e) => handleRename(ch.id, e.target.value)} />
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(ch.id); }} className="ml-1 text-xs text-destructive" title="Delete chapter">✕</button>
             </div>
           ))}
-          <button onClick={() => handleAddChapter()} className="px-3 py-1 bg-green-600 text-white rounded text-sm">+ Add Chapter</button>
+          <button onClick={() => handleAddChapter()} className="px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm font-semibold shadow hover:bg-primary/90">+ Add Chapter</button>
         </div>
 
         {activeChapter && (
           <div className="relative">
             <textarea
               ref={editorRef}
-              className="w-full h-[60vh] border px-3 py-2 rounded text-black bg-white dark:bg-gray-800 dark:text-white"
+              className="w-full h-[60vh] border border-input p-3 rounded-md bg-background text-foreground"
               value={activeChapter.content}
               onChange={(e) => handleContentChange(activeChapter.id, e.target.value)}
               onSelect={handleSelect}
@@ -169,7 +166,7 @@ export default function LongformEditor() {
             {selection && (
               <button
                 onClick={handleInjectToEditor}
-                className="absolute bottom-4 right-4 bg-fuchsia-600 text-white px-4 py-2 rounded shadow-lg hover:bg-fuchsia-700"
+                className="absolute bottom-4 right-4 bg-accent text-accent-foreground px-4 py-2 rounded-md shadow-lg font-semibold hover:bg-accent/90"
               >
                 ✨ Send to Editor
               </button>
