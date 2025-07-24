@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import FileImporter from './FileImporter'; // Import the new component
+import FileImporter from './FileImporter';
 
 interface Chapter {
   id: string;
@@ -15,7 +15,7 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [selection, setSelection] = useState("");
-  const [showImporter, setShowImporter] = useState(false); // State to control the importer modal
+  const [showImporter, setShowImporter] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
   // Load from localStorage on mount
@@ -41,12 +41,10 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
     const updated = [...chapters, newChapter];
     setChapters(updated);
     setActiveId(id);
-    return updated;
   };
   
-  // Handler for when a file has been parsed by the importer
   const handleFileParsed = (content: string, fileName: string) => {
-      const chapterTitle = fileName.replace(/\.[^/.]+$/, ""); // Remove file extension for title
+      const chapterTitle = fileName.replace(/\.[^/.]+$/, "");
       handleAddChapter(chapterTitle, content);
   };
 
@@ -76,6 +74,20 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
     }
   };
   
+  const activeChapter = chapters.find((ch) => ch.id === activeId);
+
+  // --- NEW --- Handler to export only the currently active chapter
+  const handleExportChapter = () => {
+    if (!activeChapter) return;
+    const blob = new Blob([activeChapter.content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${activeChapter.title}.txt`; // Use the chapter title for the filename
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportAll = () => {
     const fullText = chapters.map((ch) => `# ${ch.title}\n\n${ch.content}`).join("\n\n---\n\n");
     const blob = new Blob([fullText], { type: "text/plain" });
@@ -86,8 +98,6 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
     a.click();
     URL.revokeObjectURL(url);
   };
-
-  const activeChapter = chapters.find((ch) => ch.id === activeId);
 
   return (
     <>
@@ -100,6 +110,12 @@ export default function LongformEditor({ onInjectToEditor }: Props) {
             <button onClick={() => setShowImporter(true)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">
               📥 Import
             </button>
+            {/* --- NEW --- Button to export the active chapter */}
+            {activeChapter && (
+              <button onClick={handleExportChapter} className="bg-teal-600 text-white px-3 py-1 rounded text-sm mr-2">
+                📤 Export Chapter
+              </button>
+            )}
             <button onClick={handleExportAll} className="bg-gray-700 text-white px-3 py-1 rounded text-sm">
               📤 Export Full Draft
             </button>
