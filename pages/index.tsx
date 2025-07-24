@@ -1,9 +1,13 @@
 import { useState } from "react";
 import ChatSidebar from "../components/ChatSidebar";
-import HexakinEditor from "../components/HexakinEditor"; // The new component
+import HexakinEditor from "../components/HexakinEditor";
+import LongformEditor from "../components/LongformEditor"; // Make sure this component exists
 
 export default function Home() {
+  // State to control the active tab
+  const [activeTab, setActiveTab] = useState<'editor' | 'draft'>('editor');
   const [darkMode, setDarkMode] = useState(false);
+
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
   return (
@@ -11,16 +15,30 @@ export default function Home() {
       <div className="flex flex-col md:flex-row">
         <main className="flex-1 p-6">
           <header className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">✨ Hexakin</h1>
+            {/* Tab switching buttons */}
+            <div className="flex gap-4">
+              <button
+                className={`text-2xl font-bold ${activeTab === 'editor' ? 'text-blue-600 underline' : ''}`}
+                onClick={() => setActiveTab('editor')}
+              >
+                ✨ Hexakin Editor
+              </button>
+              <button
+                className={`text-2xl font-bold ${activeTab === 'draft' ? 'text-blue-600 underline' : ''}`}
+                onClick={() => setActiveTab('draft')}
+              >
+                ✍️ Draft Studio
+              </button>
+            </div>
             <button onClick={toggleDarkMode} className="border px-3 py-1 rounded">
               {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
             </button>
           </header>
           
-          {/* The HexakinEditor component now contains all the complexity,
-            keeping this main page file clean and simple.
-          */}
-          <HexakinEditor />
+          {/* Conditionally render the component based on the active tab */}
+          <div>
+            {activeTab === 'editor' ? <HexakinEditor /> : <LongformEditor />}
+          </div>
 
         </main>
         
