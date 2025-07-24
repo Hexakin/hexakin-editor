@@ -1,41 +1,54 @@
 // components/InlineCritique.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-interface InlineCritiqueProps {
+interface Props {
   text: string;
   purpose: string;
 }
 
-export default function InlineCritique({ text, purpose }: InlineCritiqueProps) {
+export default function InlineCritique({ text, purpose }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
 
   const handleCritique = async () => {
+    if (!text) return;
     setLoading(true);
+    setError("");
+    setSent(false);
     try {
-      await fetch("/api/chat-assistant", {
+      const response = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          role: "user",
-          content: `💡 Critique this revised text for the selected purpose (${purpose}):\n\n"""${text}"""`,
+          action: "critique",
+          payload: { text, purpose },
         }),
       });
-    } catch (error) {
-      console.error("Failed to send critique to assistant:", error);
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setError("Critique failed to send.");
+      } else {
+        setSent(true);
+      }
+    } catch (err) {
+      console.error("Critique error:", err);
+      setError("Critique failed.");
     }
     setLoading(false);
   };
 
   return (
-    <div className="my-4 text-sm text-gray-600 text-center">
+    <div className="my-4 text-sm text-gray-700">
       <button
         onClick={handleCritique}
+        className="bg-yellow-100 text-yellow-900 font-semibold px-4 py-2 rounded hover:bg-yellow-200 transition-all"
         disabled={loading}
-        className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 font-medium px-4 py-2 rounded transition"
       >
-        💡 {loading ? "Sending..." : "Critique This"}
+        💡 {loading ? "Sending..." : sent ? "Sent!" : "Critique This"}
       </button>
-      <div className="text-xs mt-1 text-gray-400">Critique will appear in the assistant chat →</div>
+      <div className="text-xs text-gray-500 mt-1">Critique will appear in the assistant chat →</div>
+      {error && <div className="text-red-500 mt-1">{error}</div>}
     </div>
   );
 }
