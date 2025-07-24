@@ -10,38 +10,47 @@ export default function LongformEditor() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [activeId, setActiveId] = useState<string>("");
 
+  // Load on mount
   useEffect(() => {
     const saved = localStorage.getItem("hexakin_chapters");
     if (saved) {
-      const parsed = JSON.parse(saved);
+      const parsed: Chapter[] = JSON.parse(saved);
       setChapters(parsed);
       if (parsed.length > 0) setActiveId(parsed[0].id);
-    } else {
-      handleAddChapter(); // initialize with 1
     }
   }, []);
 
+  // Auto-save to localStorage on any change
   useEffect(() => {
-    localStorage.setItem("hexakin_chapters", JSON.stringify(chapters));
+    if (chapters.length > 0) {
+      localStorage.setItem("hexakin_chapters", JSON.stringify(chapters));
+    }
   }, [chapters]);
 
   const handleAddChapter = () => {
     const id = Date.now().toString();
     const newChapter = { id, title: `Chapter ${chapters.length + 1}`, content: "" };
-    setChapters([...chapters, newChapter]);
+    const updated = [...chapters, newChapter];
+    setChapters(updated);
     setActiveId(id);
+    // Save immediately
+    localStorage.setItem("hexakin_chapters", JSON.stringify(updated));
   };
 
   const handleRename = (id: string, newTitle: string) => {
-    setChapters((prev) =>
-      prev.map((ch) => (ch.id === id ? { ...ch, title: newTitle } : ch))
+    const updated = chapters.map((ch) =>
+      ch.id === id ? { ...ch, title: newTitle } : ch
     );
+    setChapters(updated);
+    localStorage.setItem("hexakin_chapters", JSON.stringify(updated));
   };
 
   const handleContentChange = (id: string, newContent: string) => {
-    setChapters((prev) =>
-      prev.map((ch) => (ch.id === id ? { ...ch, content: newContent } : ch))
+    const updated = chapters.map((ch) =>
+      ch.id === id ? { ...ch, content: newContent } : ch
     );
+    setChapters(updated);
+    localStorage.setItem("hexakin_chapters", JSON.stringify(updated));
   };
 
   const handleDelete = (id: string) => {
@@ -50,8 +59,10 @@ export default function LongformEditor() {
     if (activeId === id && updated.length > 0) {
       setActiveId(updated[0].id);
     } else if (updated.length === 0) {
-      handleAddChapter();
+      // Don't call handleAddChapter here — user should choose to add again
+      setActiveId("");
     }
+    localStorage.setItem("hexakin_chapters", JSON.stringify(updated));
   };
 
   const active = chapters.find((ch) => ch.id === activeId);
