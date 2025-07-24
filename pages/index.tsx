@@ -248,7 +248,8 @@ export default function Home() {
 <ExportButtons text={editedText} />
 
 <div className="my-4">
-  <InlineCritique text={editedText} />
+<InlineCritique text={editedText} purpose={purpose} />
+
 </div>
 
       <div className="my-4">
