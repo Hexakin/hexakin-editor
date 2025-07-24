@@ -8,6 +8,7 @@ import DiffView from "../components/DiffView";
 import EchoTracker from "../components/EchoTracker";
 import ToneAnalyzer from "../components/ToneAnalyzer";
 import InlineCritique from "../components/InlineCritique";
+import LongformEditor from "../components/LongformEditor";
 
 const REFINE_OPTIONS = [
   "Make it more vivid",
@@ -27,6 +28,9 @@ interface VersionPair {
 }
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<"editor" | "draft">("editor");
+
+  // Editor Mode State
   const [inputText, setInputText] = useState("");
   const [editedText, setEditedText] = useState("");
   const [refinePrompt, setRefinePrompt] = useState("");
@@ -162,153 +166,166 @@ export default function Home() {
 
   return (
     <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"} min-h-screen transition-colors`}>
-      <div className="flex flex-col md:flex-row">
-        <div className="flex-1 p-6">
-
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Hexakin Editor</h1>
+      {/* TAB SWITCHER */}
+      <div className="flex justify-between items-center p-4 border-b">
+        <div className="flex gap-4">
+          <button
+            className={`font-semibold ${activeTab === "editor" ? "text-blue-600 underline" : ""}`}
+            onClick={() => setActiveTab("editor")}
+          >
+            ✨ Hexakin Editor
+          </button>
+          <button
+            className={`font-semibold ${activeTab === "draft" ? "text-blue-600 underline" : ""}`}
+            onClick={() => setActiveTab("draft")}
+          >
+            ✍️ Draft Studio
+          </button>
+        </div>
         <button onClick={toggleDarkMode} className="border px-3 py-1 rounded">
           {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div>
-          <label className="block mb-1 font-semibold" title="Why you're editing this text">Purpose</label>
-          <select className="w-full border px-2 py-1 rounded" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
-            <option title="Improve grammar, flow, and clarity">Line Edit</option>
-            <option title="Rebuild the paragraph's structure and tone">Paragraph Rewrite</option>
-            <option title="Boost storytelling, emotion, and immersion">Fiction Improve</option>
-            <option title="Detect and reduce word/phrase repetition">Repetition Check</option>
-          </select>
-        </div>
-        <div>
-          <label className="block mb-1 font-semibold" title="Stylistic tone for the rewrite">Style</label>
-          <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
-            <option title="Balanced, neutral editing">Default</option>
-            <option title="Epic, whimsical, or magical tone">Fantasy</option>
-            <option title="Professional, clean, academic tone">Formal</option>
-            <option title="Light, clever, amusing style">Playful</option>
-            <option title="Futuristic, sleek, or technical">Science Fiction</option>
-            <option title="Gritty, suspenseful, moody tone">Dark Thriller</option>
-          </select>
-        </div>
-        <div>
-          <label className="block mb-1 font-semibold" title="Text type to adjust the model’s behavior">Editor Type</label>
-          <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
-            <option title="Best for creative writing and storytelling">Novel Editor</option>
-            <option title="Helpful for email drafts and replies">Email Editor</option>
-            <option title="Focuses on clarity for business reports">Report Editor</option>
-            <option title="Supports forms, EHCPs, and local council docs">Education/Local Council Editor</option>
-          </select>
-        </div>
       </div>
 
-      <div className="mb-4">
-        <label className="block font-semibold mb-1">Input Text</label>
-        <textarea
-          className="w-full h-32 border px-2 py-1 rounded"
-          placeholder="Paste or type your text here..."
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-        />
-      </div>
+      <div className="flex flex-col md:flex-row">
+        <div className="flex-1 p-6">
+          {activeTab === "editor" ? (
+            <>
+              {/* ✨ Hexakin Editor Mode */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block mb-1 font-semibold">Purpose</label>
+                  <select className="w-full border px-2 py-1 rounded" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+                    <option>Line Edit</option>
+                    <option>Paragraph Rewrite</option>
+                    <option>Fiction Improve</option>
+                    <option>Repetition Check</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold">Style</label>
+                  <select className="w-full border px-2 py-1 rounded" value={style} onChange={(e) => setStyle(e.target.value)}>
+                    <option>Default</option>
+                    <option>Fantasy</option>
+                    <option>Formal</option>
+                    <option>Playful</option>
+                    <option>Science Fiction</option>
+                    <option>Dark Thriller</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold">Editor Type</label>
+                  <select className="w-full border px-2 py-1 rounded" value={editorType} onChange={(e) => setEditorType(e.target.value)}>
+                    <option>Novel Editor</option>
+                    <option>Email Editor</option>
+                    <option>Report Editor</option>
+                    <option>Education/Local Council Editor</option>
+                  </select>
+                </div>
+              </div>
 
-      <div className="flex gap-2 mb-6">
-        <button onClick={handleEdit} disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded">
-          Submit
-        </button>
-        <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded">
-          Clear
-        </button>
-      </div>
+              <div className="mb-4">
+                <label className="block font-semibold mb-1">Input Text</label>
+                <textarea
+                  className="w-full h-32 border px-2 py-1 rounded"
+                  placeholder="Paste or type your text here..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                />
+              </div>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+              <div className="flex gap-2 mb-6">
+                <button onClick={handleEdit} disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded">
+                  Submit
+                </button>
+                <button onClick={handleClear} className="bg-gray-300 text-black px-4 py-2 rounded">
+                  Clear
+                </button>
+              </div>
 
-      <div className="mb-4">
-        <label className="block font-semibold mb-1">Edited Output</label>
-        <div
-          ref={outputRef}
-          className="w-full min-h-[100px] border px-2 py-2 bg-gray-50 rounded whitespace-pre-wrap"
-        >
-          {loading ? "Editing in progress..." : editedText}
-          <button
-  onClick={() => setShowDiff(!showDiff)}
-  className="mt-2 text-sm text-blue-700 underline"
->
-  {showDiff ? "Hide Differences" : "Show Differences"}
-</button>
-{showDiff && (
-  <DiffView original={inputText} edited={editedText} />
-)}
+              {error && <p className="text-red-500 mb-4">{error}</p>}
 
-        </div>
-      </div>
+              <div className="mb-4">
+                <label className="block font-semibold mb-1">Edited Output</label>
+                <div
+                  ref={outputRef}
+                  className="w-full min-h-[100px] border px-2 py-2 bg-gray-50 rounded whitespace-pre-wrap"
+                >
+                  {loading ? "Editing in progress..." : editedText}
+                  <button
+                    onClick={() => setShowDiff(!showDiff)}
+                    className="mt-2 text-sm text-blue-700 underline"
+                  >
+                    {showDiff ? "Hide Differences" : "Show Differences"}
+                  </button>
+                  {showDiff && (
+                    <DiffView original={inputText} edited={editedText} />
+                  )}
+                </div>
+              </div>
 
-<ExportButtons text={editedText} />
+              <ExportButtons text={editedText} />
+              <InlineCritique text={editedText} purpose={purpose} />
 
-<div className="my-4">
-<InlineCritique text={editedText} purpose={purpose} />
+              <div className="my-4">
+                <label className="block font-semibold mb-1">Refine Further</label>
+                <div className="flex flex-col md:flex-row gap-2">
+                  <select
+                    className="border px-2 py-1 rounded"
+                    value={selectedRefine}
+                    onChange={(e) => setSelectedRefine(e.target.value)}
+                  >
+                    <option value="">Select refinement type...</option>
+                    {REFINE_OPTIONS.map((opt) => (
+                      <option key={opt}>{opt}</option>
+                    ))}
+                  </select>
 
-</div>
+                  {selectedRefine === "Custom" && (
+                    <input
+                      type="text"
+                      placeholder="Enter custom refinement"
+                      className="border px-2 py-1 rounded w-full"
+                      value={refinePrompt}
+                      onChange={(e) => setRefinePrompt(e.target.value)}
+                    />
+                  )}
 
-      <div className="my-4">
-        <label className="block font-semibold mb-1">Refine Further</label>
-        <div className="flex flex-col md:flex-row gap-2">
-          <select
-            className="border px-2 py-1 rounded"
-            value={selectedRefine}
-            onChange={(e) => setSelectedRefine(e.target.value)}
-          >
-            <option value="">Select refinement type...</option>
-            {REFINE_OPTIONS.map((opt) => (
-              <option key={opt}>{opt}</option>
-            ))}
-          </select>
+                  <button
+                    onClick={handleRefine}
+                    disabled={loading || (!selectedRefine && !refinePrompt)}
+                    className="bg-fuchsia-600 text-white px-4 py-2 rounded"
+                  >
+                    Refine Output
+                  </button>
+                </div>
+              </div>
 
-          {selectedRefine === "Custom" && (
-            <input
-              type="text"
-              placeholder="Enter custom refinement"
-              className="border px-2 py-1 rounded w-full"
-              value={refinePrompt}
-              onChange={(e) => setRefinePrompt(e.target.value)}
-            />
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="text-sm text-blue-700 hover:underline flex items-center gap-1"
+                >
+                  <Clock size={16} /> {showHistory ? "Hide Version History" : "Show Version History"}
+                </button>
+                {showHistory && (
+                  <div className="mt-3">
+                    <VersionHistory history={versionHistory} onRestore={restoreVersion} onClose={() => setShowHistory(false)} />
+                  </div>
+                )}
+              </div>
+
+              <EchoTracker text={inputText} />
+              <ToneAnalyzer text={inputText} />
+            </>
+          ) : (
+            <LongformEditor />
           )}
-
-          <button
-            onClick={handleRefine}
-            disabled={loading || (!selectedRefine && !refinePrompt)}
-            className="bg-fuchsia-600 text-white px-4 py-2 rounded"
-          >
-            Refine Output
-          </button>
+        </div>
+        <div className="w-full md:w-[320px] border-l border-gray-300 dark:border-gray-800">
+          <ChatSidebar />
         </div>
       </div>
-
-      <div className="mt-6">
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          className="text-sm text-blue-700 hover:underline flex items-center gap-1"
-        >
-          <Clock size={16} /> {showHistory ? "Hide Version History" : "Show Version History"}
-        </button>
-        {showHistory && (
-          <div className="mt-3">
-            <VersionHistory history={versionHistory} onRestore={restoreVersion} onClose={() => setShowHistory(false)} />
-          </div>
-        )}
-      </div>
-      {/* 📌 SECTION: Echo / Pattern Tracker */}
-<EchoTracker text={inputText} />
-{/* 📌 SECTION: Tone / Formality Analysis */}
-<ToneAnalyzer text={inputText} />
-      </div> {/* End of main editor content */}
-      <div className="w-full md:w-[320px] border-l border-gray-300 dark:border-gray-800">
-        <ChatSidebar />
-      </div>
-    </div>
     </div>
   );
 }
-
