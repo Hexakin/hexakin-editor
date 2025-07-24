@@ -8,51 +8,55 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'editor' | 'draft'>('editor');
   const { theme, setTheme } = useAppContext();
 
-  // --- THE FIX ---
-  // We will apply the theme class directly to the main container div.
-  // This is a more direct approach that avoids potential issues with server-side rendering.
-  
+  // This useEffect will apply the selected theme class to the main <html> tag
+  // ensuring that our CSS variables are available everywhere.
+  useEffect(() => {
+    const root = window.document.documentElement;
+    // Remove any existing theme classes
+    root.classList.remove('theme-light', 'theme-dark', 'theme-rose');
+    // Add the currently selected theme class
+    root.classList.add(theme);
+  }, [theme]);
+
   return (
-    // The theme class is now dynamically applied to this root div,
-    // which then enables all the theme-aware colours inside it.
-    <div className={theme}>
-      <div className="bg-background text-foreground min-h-screen transition-colors">
-        <div className="flex flex-col md:flex-row">
-          <main className="flex-1 p-6">
-            <header className="flex items-center justify-between mb-6">
-              <div className="flex gap-4">
-                <button className={`text-2xl font-bold ${activeTab === 'editor' ? 'text-primary underline' : 'text-muted-foreground'}`} onClick={() => setActiveTab('editor')}>
-                  ✨ Hexakin Editor
-                </button>
-                <button className={`text-2xl font-bold ${activeTab === 'draft' ? 'text-primary underline' : 'text-muted-foreground'}`} onClick={() => setActiveTab('draft')}>
-                  ✍️ Draft Studio
-                </button>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <label htmlFor="theme-select" className="text-sm font-medium">Theme</label>
-                <select
-                  id="theme-select"
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as Theme)}
-                  className="border border-border bg-card text-card-foreground px-2 py-1 rounded-md text-sm"
-                >
-                  <option value="theme-dark">Dark</option>
-                  <option value="theme-light">Light</option>
-                  <option value="theme-rose">Rose</option>
-                </select>
-              </div>
-            </header>
-            
-            <div>
-              {activeTab === 'editor' ? <HexakinEditor /> : <LongformEditor />}
+    // We now use the theme-aware background and foreground colours
+    // from our tailwind.config.js, which are powered by the CSS variables.
+    <div className="bg-background text-foreground min-h-screen transition-colors">
+      <div className="flex flex-col md:flex-row">
+        <main className="flex-1 p-6">
+          <header className="flex items-center justify-between mb-6">
+            <div className="flex gap-4">
+              <button className={`text-2xl font-bold ${activeTab === 'editor' ? 'text-primary underline' : 'text-muted-foreground'}`} onClick={() => setActiveTab('editor')}>
+                ✨ Hexakin Editor
+              </button>
+              <button className={`text-2xl font-bold ${activeTab === 'draft' ? 'text-primary underline' : 'text-muted-foreground'}`} onClick={() => setActiveTab('draft')}>
+                ✍️ Draft Studio
+              </button>
             </div>
-          </main>
+            
+            <div className="flex items-center gap-2">
+              <label htmlFor="theme-select" className="text-sm font-medium">Theme</label>
+              <select
+                id="theme-select"
+                value={theme}
+                onChange={(e) => setTheme(e.target.value as Theme)}
+                className="border border-border bg-card text-card-foreground px-2 py-1 rounded-md text-sm"
+              >
+                <option value="theme-dark">Dark</option>
+                <option value="theme-light">Light</option>
+                <option value="theme-rose">Rose</option>
+              </select>
+            </div>
+          </header>
           
-          <aside className="w-full md:w-[320px] border-l border-border bg-card">
-            <ChatSidebar />
-          </aside>
-        </div>
+          <div>
+            {activeTab === 'editor' ? <HexakinEditor /> : <LongformEditor />}
+          </div>
+        </main>
+        
+        <aside className="w-full md:w-[320px] border-l border-border bg-card">
+          <ChatSidebar />
+        </aside>
       </div>
     </div>
   );
