@@ -1,5 +1,5 @@
 // components/InlineCritique.tsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Props {
   text: string;
@@ -26,10 +26,16 @@ export default function InlineCritique({ text, purpose }: Props) {
         }),
       });
       const data = await response.json();
+
       if (!response.ok || !data.success) {
         setError("Critique failed to send.");
       } else {
         setSent(true);
+
+        // ✅ Inject into assistant chat
+        if (typeof window !== "undefined" && (window as any).HexakinChatInject) {
+          (window as any).HexakinChatInject("💡 *Critique Result:*\n\n" + data.result);
+        }
       }
     } catch (err) {
       console.error("Critique error:", err);
