@@ -1,3 +1,4 @@
+// pages/api/assistant.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { OpenAI } from "openai";
 
@@ -29,10 +30,25 @@ const formatContext = (context: any): string => {
   return contextString;
 };
 
+// --- CORRECTED PROMPTS ---
 const PROMPTS = {
-  critique: (text: string, purpose: string) => `You are a literary critic... [Your critique prompt here]`,
-  echo: (text: string) => `You are a literary pattern analyst... [Your echo prompt here]`,
-  tone: (text: string, targetTone?: string) => `Analyze the text for tone... [Your tone prompt here]`,
+  critique: (text: string, purpose: string) => `You are a literary critic. Your task is to provide a constructive critique of the following text, keeping in mind the author's stated purpose is "${purpose}". Focus on providing actionable feedback and specific examples. Do not rewrite the text, only critique it.
+
+--- TEXT TO CRITIQUE ---
+${text}
+--- END TEXT ---`,
+
+  echo: (text: string) => `You are a literary pattern analyst. Your task is to meticulously dissect the following text to identify repeated words (excluding common stop words like "the", "a", "is"), recurring phrases, and sentence openers. Present your findings clearly, perhaps in a list, to help the author see these "echoes" in their work.
+
+--- TEXT TO ANALYSE ---
+${text}
+--- END TEXT ---`,
+
+  tone: (text: string, targetTone?: string) => `You are a tone and sentiment analyst. Analyse the tone, mood, and formality of the following text. ${targetTone ? `The author's desired tone is "${targetTone}". Compare the actual tone to the desired tone and provide suggestions for alignment.` : ''} Give a clear summary of your findings.
+
+--- TEXT TO ANALYSE ---
+${text}
+--- END TEXT ---`,
 };
 
 type SystemMessage = {
@@ -54,7 +70,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let promptContent = "";
     const systemMessages = {
-      // --- NEW: Updated system prompt for chat ---
       chat: { role: "system", content: "You are a writing assistant. First, provide a brief, friendly conversational opening. Then, if the user is asking for a writing suggestion, provide ONLY the suggested text inside a single markdown code block. Example: 'Of course, here is a suggestion:\\n\\n```\\nThe crimson sun bled across the horizon.\\n```'" },
       default: { role: "system", content: "You are an expert writing editor." },
     } as const;
